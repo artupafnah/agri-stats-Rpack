@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panduan Analisis Statistik &amp; Komputasi R</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,700|Roboto:300,400,400i,500,700|Fira+Code:400,500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background-color: #f4f7f9;
+      color: #333333;
+      line-height: 1.7;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a252f 0%, #2c3e50 55%, #2980b9 100%);
+      color: #ffffff;
+      padding: 52px 24px 44px;
+      border-bottom: 5px solid #2980b9;
+    }
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .badge-top {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #eaf2f8;
+      font-family: "Fira Code", monospace;
+      font-size: 13px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-family: "Roboto Slab", Georgia, serif;
+      font-size: 2.3em;
+      margin: 0 0 12px;
+      line-height: 1.25;
+    }
+    .hero p {
+      font-size: 1.06em;
+      max-width: 820px;
+      margin: 0;
+      color: #dce6ee;
+    }
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: -26px auto 32px;
+    }
+    .stat-box {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+      border-left: 4px solid #2980b9;
+    }
+    .stat-box strong {
+      display: block;
+      font-family: "Roboto Slab", serif;
+      font-size: 1.45em;
+      color: #1a252f;
+    }
+    .stat-box span {
+      font-size: 0.9em;
+      color: #5d6d7e;
+    }
+    .section-title {
+      font-family: "Roboto Slab", Georgia, serif;
+      color: #2c3e50;
+      border-bottom: 2px solid #dfe6ec;
+      padding-bottom: 8px;
+      margin: 34px 0 20px;
+    }
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .module-card {
+      background: #ffffff;
+      border: 1px solid #e1e8ed;
+      border-left: 5px solid #2980b9;
+      border-radius: 6px;
+      padding: 22px 26px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .module-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(41, 128, 185, 0.13);
+    }
+    .module-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .module-num {
+      font-family: "Fira Code", monospace;
+      font-size: 0.85em;
+      font-weight: 500;
+      color: #c7254e;
+      background: #f9f2f4;
+      padding: 3px 9px;
+      border-radius: 4px;
+    }
+    .module-topic {
+      font-size: 0.85em;
+      color: #7f8c8d;
+    }
+    .module-card h3 {
+      font-family: "Roboto Slab", Georgia, serif;
+      margin: 2px 0;
+      font-size: 1.3em;
+      color: #1a252f;
+    }
+    .module-card h3 a {
+      color: #1a252f;
+      text-decoration: none;
+    }
+    .module-card h3 a:hover {
+      color: #2980b9;
+    }
+    .module-desc {
+      margin: 0;
+      color: #4a5568;
+      font-size: 0.96em;
+    }
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 4px;
+    }
+    .tag {
+      font-family: "Fira Code", monospace;
+      font-size: 0.8em;
+      background-color: #f7f7f7;
+      border: 1px solid #e1e4e8;
+      color: #2c3e50;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+    .card-actions {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .btn-open {
+      display: inline-block;
+      background-color: #2980b9;
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.92em;
+      padding: 8px 18px;
+      border-radius: 4px;
+      transition: background-color 0.15s ease;
+    }
+    .btn-open:hover {
+      background-color: #1f6391;
+    }
+    .btn-script {
+      display: inline-block;
+      color: #2c3e50;
+      background-color: #eef3f7;
+      text-decoration: none;
+      font-family: "Fira Code", monospace;
+      font-size: 0.83em;
+      padding: 7px 13px;
+      border-radius: 4px;
+      border: 1px solid #d5dfe7;
+    }
+    .btn-script:hover {
+      background-color: #dfe9f1;
+    }
+    .info-callout {
+      background-color: #eef7fa;
+      border-left: 5px solid #2980b9;
+      padding: 16px 20px;
+      margin: 28px 0;
+      border-radius: 0 5px 5px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+      margin: 16px 0 36px;
+      font-size: 0.93em;
+    }
+    th {
+      background-color: #2c3e50;
+      color: #ffffff;
+      text-align: left;
+      padding: 10px 14px;
+      border: 1px solid #dfe2e5;
+    }
+    td {
+      padding: 9px 14px;
+      border: 1px solid #dfe2e5;
+    }
+    tr:nth-child(even) { background-color: #f8f9fa; }
+    code {
+      font-family: "Fira Code", monospace;
+      color: #c7254e;
+      background: #f9f2f4;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 90%;
+    }
+    footer {
+      text-align: center;
+      padding: 28px 20px;
+      color: #7f8c8d;
+      font-size: 0.9em;
+      border-top: 1px solid #e1e8ed;
+      margin-top: 40px;
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="container">
+      <div class="badge-top">Panduan Analisis Statistik &amp; Komputasi R</div>
+      <h1>Analisis Statistik &amp; Perancangan Percobaan dengan R</h1>
+      <p>Dokumentasi panduan mandiri analisis statistik dan komputasi R secara berurutan mulai dari pengenalan dasar R &amp; RStudio, Perancangan Percobaan (RAL, RAK, Uji Lanjut, Faktorial, Split-Plot, Strip-Plot), Analisis Korelasi, hingga Pemodelan Regresi, Diagnostik Asumsi, dan Penanganan Multikolinieritas.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="stats-bar">
+      <div class="stat-box">
+        <strong>7 Modul Utuh</strong>
+        <span>Berurutan dari Modul 00 hingga Modul 06</span>
+      </div>
+      <div class="stat-box">
+        <strong>13 Dataset CSV</strong>
+        <span>Studi kasus terapan siap analisis</span>
+      </div>
+      <div class="stat-box">
+        <strong>Dual Format</strong>
+        <span>Laporan Web Robobook (<code>.html</code>) &amp; Script R (<code>.R</code>)</span>
+      </div>
+      <div class="stat-box">
+        <strong>Siap Kutip</strong>
+        <span>Konsep, Rumus, Kode R, &amp; Interpretasi Output</span>
+      </div>
+    </section>
+
+    <div class="info-callout">
+      <strong>Petunjuk Belajar Berurutan:</strong> Apabila Anda baru pertama kali menggunakan R, mulailah dari <strong>Modul 00</strong> untuk memahami 4 panel RStudio, operator, struktur <code>data.frame</code>, serta pentingnya tipe data <code>factor</code> sebelum memasuki analisis ragam di <strong>Modul 01–04</strong> dan pemodelan hubungan peubah di <strong>Modul 05–06</strong>.
+    </div>
+
+    <h2 class="section-title">Daftar Modul Panduan &amp; Analisis (Klik untuk Membuka)</h2>
+
+    <div class="module-grid">
+
+      <article class="module-card">
+        <div class="module-header">
+          <span class="module-num">MODUL 00</span>
+          <span class="module-topic">Pondasi Dasar Pemrograman R</span>
+        </div>
+        <h3><a href="Modul_00_Pengantar_R_dan_RStudio.html">Pengantar R dan RStudio untuk Pemula</a></h3>
+        <p class="module-desc">Pengenalan ekosistem R &amp; RStudio, langkah instalasi, fungsi 4 panel RStudio, manajemen paket &amp; direktori kerja, 4 kelompok operator dasar, 4 tipe data (termasuk krusialnya <code>factor</code>), 5 struktur data, serta prosedur baku impor dataset CSV/Excel.</p>
+        <div class="tag-list">
+          <span class="tag">getwd()</span>
+          <span class="tag">library()</span>
+          <span class="tag">factor()</span>
+          <span class="tag">data.frame()</span>
+          <span class="tag">read.csv()</span>
+          <span class="tag">boxplot()</span>
+        </div>
+        <div class="card-actions">
+          <a class="btn-open" href="Modul_00_Pengantar_R_dan_RStudio.html">Buka Buku Modul 00 &rarr;</a>
+          <a class="btn-script" href="../scripts/Modul_00_Pengantar_R_dan_RStudio.R">Script .R</a>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <div class="module-header">
+          <span class="module-num">MODUL 01</span>
+          <span class="module-topic">Perancangan Percobaan Satu Faktor</span>
+        </div>
+        <h3><a href="Modul_01_Rancangan_Satu_Faktor_RAL_dan_RAK.html">Rancangan Percobaan Satu Faktor — RAL dan RAK</a></h3>
+        <p class="module-desc">Prinsip ulangan, pengacakan denah lapangan RAL &amp; RAK, ANOVA Satu Arah (RAL) pada inokulasi 6 strain <em>Rhizobium</em> tanaman <em>Red Clover</em>, serta ANOVA Dua Arah Tanpa Interaksi (RAK) dan Efisiensi Relatif pengelompokan pada pemupukan NPK Padi S-969.</p>
+        <div class="tag-list">
+          <span class="tag">design.crd()</span>
+          <span class="tag">design.rcbd()</span>
+          <span class="tag">aov(Y ~ Perlakuan)</span>
+          <span class="tag">aov(Y ~ Kelompok + Perlakuan)</span>
+          <span class="tag">KK (CV%)</span>
+        </div>
+        <div class="card-actions">
+          <a class="btn-open" href="Modul_01_Rancangan_Satu_Faktor_RAL_dan_RAK.html">Buka Buku Modul 01 &rarr;</a>
+          <a class="btn-script" href="../scripts/Modul_01_Rancangan_Satu_Faktor_RAL_dan_RAK.R">Script .R</a>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <div class="module-header">
+          <span class="module-num">MODUL 02</span>
+          <span class="module-topic">Uji Lanjut &amp; Kontras Ortogonal</span>
+        </div>
+        <h3><a href="Modul_02_Uji_Lanjut_Perbandingan_Berganda.html">Perbandingan Nilai Tengah Berganda (Uji Lanjut)</a></h3>
+        <p class="module-desc">Panduan lengkap memilih dan menginterpretasikan uji lanjut tak terencana (BNT ulangan sama &amp; tak sama, BNJ/Tukey HSD, Duncan/DMRT, SNK, Dunnett terhadap kontrol, Scheffe) serta uji terencana Kontras Ortogonal (ulangan sama &amp; tak sama) dan Polinomial Ortogonal.</p>
+        <div class="tag-list">
+          <span class="tag">LSD.test()</span>
+          <span class="tag">TukeyHSD() / HSD.test()</span>
+          <span class="tag">duncan.test()</span>
+          <span class="tag">SNK / Scheffe / Dunnett</span>
+          <span class="tag">contrasts()</span>
+          <span class="tag">contr.poly()</span>
+        </div>
+        <div class="card-actions">
+          <a class="btn-open" href="Modul_02_Uji_Lanjut_Perbandingan_Berganda.html">Buka Buku Modul 02 &rarr;</a>
+          <a class="btn-script" href="../scripts/Modul_02_Uji_Lanjut_Perbandingan_Berganda.R">Script .R</a>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <div class="module-header">
+          <span class="module-num">MODUL 03</span>
+          <span class="module-topic">Percobaan Faktorial Multifaktor</span>
+        </div>
+        <h3><a href="Modul_03_Percobaan_Faktorial_Multifaktor.html">Percobaan Faktorial (Multifaktor)</a></h3>
+        <p class="module-desc">Pengacakan kombinasi perlakuan faktorial dalam RAL, RAK, dan RBSL, pengujian interaksi vs pengaruh utama pada fumigasi benih tomat (Faktorial RAL), suplemen sapi potong (Faktorial RAK), dan jagung (Faktorial RBSL), serta plot interaksi dan uji Pengaruh Sederhana (<em>Simple Effects</em>).</p>
+        <div class="tag-list">
+          <span class="tag">design.ab()</span>
+          <span class="tag">aov(Y ~ A * B)</span>
+          <span class="tag">Faktorial RAK &amp; RBSL</span>
+          <span class="tag">interaction.plot()</span>
+          <span class="tag">emmeans(~ A | B)</span>
+          <span class="tag">multcomp::cld()</span>
+        </div>
+        <div class="card-actions">
+          <a class="btn-open" href="Modul_03_Percobaan_Faktorial_Multifaktor.html">Buka Buku Modul 03 &rarr;</a>
+          <a class="btn-script" href="../scripts/Modul_03_Percobaan_Faktorial_Multifaktor.R">Script .R</a>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <div class="module-header">
+          <span class="module-num">MODUL 04</span>
+          <span class="module-topic">Rancangan Berlapis Galat Majemuk</span>
+        </div>
+        <h3><a href="Modul_04_Rancangan_Split_Plot_dan_Strip_Plot.html">Rancangan Petak Terpisah (Split-Plot) &amp; Petak Berjalur (Strip-Plot)</a></h3>
+        <p class="module-desc">Rancangan berlapis galat majemuk: pengacakan dua tahap <em>Split-Plot</em> &amp; jalur tegak lurus <em>Strip-Plot</em>, Split-Plot RAL serapan debu tanaman, Split-Plot RAK varietas gandum beserta LSMeans, serta Strip-Plot RAK padi 3 galat lengkap dengan perhitungan <code>KKa</code>, <code>KKb</code>, dan <code>KKc</code>.</p>
+        <div class="tag-list">
+          <span class="tag">design.split()</span>
+          <span class="tag">design.strip()</span>
+          <span class="tag">Error(Kelompok:A)</span>
+          <span class="tag">sp.plot()</span>
+          <span class="tag">strip.plot()</span>
+          <span class="tag">KKa, KKb, KKc</span>
+        </div>
+        <div class="card-actions">
+          <a class="btn-open" href="Modul_04_Rancangan_Split_Plot_dan_Strip_Plot.html">Buka Buku Modul 04 &rarr;</a>
+          <a class="btn-script" href="../scripts/Modul_04_Rancangan_Split_Plot_dan_Strip_Plot.R">Script .R</a>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <div class="module-header">
+          <span class="module-num">MODUL 05</span>
+          <span class="module-topic">Eksplorasi &amp; Analisis Asosiasi</span>
+        </div>
+        <h3><a href="Modul_05_Eksplorasi_dan_Analisis_Korelasi.html">Eksplorasi Hubungan Dua Peubah &amp; Analisis Korelasi</a></h3>
+        <p class="module-desc">Diagram pencar, Korelasi Linier Pearson &amp; uji-<em>t</em> (emisi HC &amp; bioakustik derik jangkrik), pengujian hipotesis korelasi umum <em>H</em><sub>0</sub>: &rho; = &rho;<sub>0</sub> melalui Transformasi <em>Z</em> Fisher, kekekaran Korelasi Peringkat Spearman saat ada <em>outlier</em>, serta Tabel Kontingensi &amp; Uji Khi-Kuadrat.</p>
+        <div class="tag-list">
+          <span class="tag">cor.test(method="pearson")</span>
+          <span class="tag">atanh() Fisher Z</span>
+          <span class="tag">cor.test(method="spearman")</span>
+          <span class="tag">chisq.test()</span>
+          <span class="tag">Cramer's V</span>
+        </div>
+        <div class="card-actions">
+          <a class="btn-open" href="Modul_05_Eksplorasi_dan_Analisis_Korelasi.html">Buka Buku Modul 05 &rarr;</a>
+          <a class="btn-script" href="../scripts/Modul_05_Eksplorasi_dan_Analisis_Korelasi.R">Script .R</a>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <div class="module-header">
+          <span class="module-num">MODUL 06</span>
+          <span class="module-topic">Pemodelan Regresi &amp; Diagnostik</span>
+        </div>
+        <h3><a href="Modul_06_Analisis_Regresi_Diagnostik_dan_Seleksi_Peubah.html">Analisis Regresi, Diagnostik Asumsi, &amp; Seleksi Peubah</a></h3>
+        <p class="module-desc">Regresi Linier Sederhana (uji-<em>t</em> 2 &amp; 1 arah, <em>R</em><sup>2</sup>, Root MSE), Regresi Linier Berganda &amp; aljabar matriks <code>(X'X)<sup>-1</sup>X'Y</code>, Regresi Logistik Biner &amp; LD<sub>50</sub>, uji asumsi Lilliefors, Khi-Kuadrat, Bartlett, &amp; <em>F</em><sub>max</sub> Hartley, deteksi VIF, seleksi Stepwise, hingga Ridge, PCR, dan PLS.</p>
+        <div class="tag-list">
+          <span class="tag">lm() &amp; glm(binomial)</span>
+          <span class="tag">lillie.test() &amp; pearson.test()</span>
+          <span class="tag">bartlett.test() &amp; Hartley</span>
+          <span class="tag">car::vif()</span>
+          <span class="tag">step()</span>
+          <span class="tag">lm.ridge / glmnet / pcr / plsr</span>
+        </div>
+        <div class="card-actions">
+          <a class="btn-open" href="Modul_06_Analisis_Regresi_Diagnostik_dan_Seleksi_Peubah.html">Buka Buku Modul 06 &rarr;</a>
+          <a class="btn-script" href="../scripts/Modul_06_Analisis_Regresi_Diagnostik_dan_Seleksi_Peubah.R">Script .R</a>
+        </div>
+      </article>
+
+    </div>
+
+    <h2 class="section-title">Daftar 13 Dataset CSV Studi Kasus (Folder <code>data/</code>)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Nama File Dataset</th>
+          <th>Deskripsi Kasus Penelitian</th>
+          <th>Digunakan pada</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><code>01_padi_rak_s969.csv</code></td><td>RAK 6 Perlakuan Pupuk NPK &times; 4 Kelompok pada Padi Genotif S-969</td><td>Modul 00, Modul 01</td></tr>
+        <tr><td>2</td><td><code>02_red_clover_ral.csv</code></td><td>RAL 6 Strain Bakteri <em>Rhizobium</em> &times; 5 Ulangan pada Tanaman <em>Red Clover</em></td><td>Modul 01, Modul 02, Modul 06</td></tr>
+        <tr><td>3</td><td><code>03_ayam_kontras_ral.csv</code></td><td>RAL 6 Pabrik <em>Feed Supplement</em> &times; 4 Ulangan pada Ayam Pedaging (5 Kontras Ortogonal)</td><td>Modul 02</td></tr>
+        <tr><td>4</td><td><code>04_kedelai_polinomial_rak.csv</code></td><td>RAK 5 Jarak Tanam Kedelai <em>Ottawa Mandarin</em> &times; 6 Kelompok (Polinomial Ortogonal)</td><td>Modul 02</td></tr>
+        <tr><td>5</td><td><code>05_tomat_faktorial_ral.csv</code></td><td>Faktorial RAL 5 Dosis Fumigan &times; 2 Lama Fumigasi &times; 3 Ulangan (Benih Tomat)</td><td>Modul 03</td></tr>
+        <tr><td>6</td><td><code>06_sapi_faktorial_rak.csv</code></td><td>Faktorial RAK 4 Suplemen Seng &times; 3 Minyak Ikan &times; 3 Blok (Bobot Sapi)</td><td>Modul 03</td></tr>
+        <tr><td>7</td><td><code>07_debu_splitplot_ral.csv</code></td><td>Split-Plot RAL 2 Lokasi &times; 10 Jenis Tanaman Pelindung &times; 3 Ulangan (Serapan Debu)</td><td>Modul 04</td></tr>
+        <tr><td>8</td><td><code>08_gandum_splitplot_rak.csv</code></td><td>Split-Plot RAK 4 Varietas Gandum &times; 4 Perlakuan Kimiawi Benih &times; 4 Kelompok</td><td>Modul 04</td></tr>
+        <tr><td>9</td><td><code>09_padi_stripplot_rak.csv</code></td><td>Strip-Plot RAK 6 Varietas Padi &times; 3 Dosis Nitrogen &times; 3 Kelompok</td><td>Modul 04</td></tr>
+        <tr><td>10</td><td><code>10_emisi_hc_korelasi.csv</code></td><td>Korelasi Jarak Tempuh Mobil vs Emisi Gas HC (Kondisi Normal &amp; Dengan Outlier)</td><td>Modul 05</td></tr>
+        <tr><td>11</td><td><code>11_jangkrik_suhu.csv</code></td><td>Korelasi Pearson &amp; Transformasi <em>Z</em> Fisher Frekuensi Derik Jangkrik vs Suhu Udara</td><td>Modul 05</td></tr>
+        <tr><td>12</td><td><code>12_atrazine_regresi_sederhana.csv</code></td><td>Regresi Linier Sederhana Konsentrasi Herbisida Atrazine vs <em>Relative Peak Area</em></td><td>Modul 06</td></tr>
+        <tr><td>13</td><td><code>13_individu_regresi_berganda.csv</code></td><td>Regresi Linier Berganda 10 Individu + Peubah Kolinier &amp; Noise (VIF, Stepwise, Ridge, PCR, PLS)</td><td>Modul 06</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <footer>
+    Panduan Analisis Statistik &amp; Komputasi R &bull; Diperbarui pada 03 November 2026
+  </footer>
+
+</body>
+</html>
+

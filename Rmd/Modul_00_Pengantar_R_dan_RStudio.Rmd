@@ -1,0 +1,387 @@
+---
+title: "Modul 00: Pengantar R dan RStudio untuk Pemula"
+output:
+  rmdformats::robobook:
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: show
+    toc_depth: 3
+    use_bookdown: true
+    css: "../assets/style_robobook.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 5,
+  comment = "#>"
+)
+```
+
+# Pengenalan R dan RStudio
+
+Selamat datang di seri **Panduan Analisis Statistik & Komputasi R**. Sebelum mempelajari perancangan percobaan (RAL, RAK, Faktorial, *Split-Plot*, *Strip-Plot*), analisis korelasi, dan pemodelan regresi, modul pembuka ini dirancang khusus bagi Anda yang **belum pernah menggunakan R sama sekali** agar dapat mengoperasikan R dan RStudio secara mandiri dari nol.
+
+## Apa Itu R?
+
+<div class="kotak-konsep">
+**Konsep Dasar — Bahasa Pemrograman R:**
+
+**R** adalah bahasa pemrograman sekaligus lingkungan perangkat lunak komputasi statistik dan grafik ilmiah yang dikembangkan pertama kali oleh **Ross Ihaka** dan **Robert Gentleman** di Auckland, Selandia Baru (1993), dan kini dikelola oleh *R Core Team*. Di bidang pertanian, biologi, kehutanan, peternakan, dan perikanan, R telah menjadi standar emas analisis data penelitian internasional.
+</div>
+
+Empat keunggulan utama R dibandingkan perangkat lunak statistik berbayar berbasis menu adalah:
+
+1. **Gratis dan Terbuka (*Open-Source*)**: Dapat diunduh dan digunakan secara bebas tanpa biaya lisensi di Windows, macOS, maupun Linux.
+2. **Ekosistem Ribuan Paket Spesifik di CRAN**: Tersedia lebih dari 20.000 paket (*packages*) di *Comprehensive R Archive Network* (CRAN), termasuk paket khusus penelitian pertanian seperti `agricolae` (rancangan percobaan & uji lanjut), `emmeans` (uji pengaruh sederhana interaksi), `multcomp` (uji Dunnett & perbandingan berganda), `car` (diagnostik multikolinieritas), hingga `pls` (regresi komponen utama).
+3. **Visualisasi Berkualitas Publikasi Ilmiah**: Mampu menghasilkan grafik eksplorasi, kurva respons polinomial, plot interaksi, hingga grafik diagnostik sisaan beresolusi tinggi.
+4. **Penelitian yang Dapat Direproduksi (*Reproducible Research*)**: Seluruh tahapan pembersihan data, analisis ANOVA/regresi, hingga pembuatan laporan HTML/PDF/Word terekam rapi di dalam *script* `.R` atau `.Rmd`, sehingga analisis dapat diulang kapan saja tanpa takut lupa urutan klik menu.
+
+## Apa Itu RStudio & Panduan Instalasi Berurutan
+
+Jika **R** diibaratkan sebagai **"mesin mobil"** yang bekerja menghitung rumus-rumus statistika di balik layar, maka **RStudio** adalah **"kabin kemudi (*dashboard*)"** atau *Integrated Development Environment* (IDE) yang menyediakan tombol, layar editor kode, jendela grafik, dan tabel data yang nyaman digunakan.
+
+<div class="kotak-kasus">
+**Urutan Instalasi Wajib (Jangan Terbalik!):**
+
+1. **Langkah 1 — Instal R (Mesin Utama) terlebih dahulu**:
+   * Kunjungi situs resmi CRAN di <https://cran.r-project.org/>.
+   * Pilih sistem operasi Anda (*Download R for Windows* / *macOS* / *Linux*), klik **base**, lalu unduh penginstal versi terbaru (misalnya `R-4.x.x-win.exe`) dan jalankan dengan pengaturan *default*.
+2. **Langkah 2 — Instal RStudio Desktop (Antarmuka IDE)**:
+   * Kunjungi situs resmi Posit di <https://posit.co/download/rstudio-desktop/>.
+   * Unduh pemasang **RStudio Desktop (Free)** sesuai sistem operasi Anda dan jalankan hingga selesai.
+3. **Langkah 3 — Buka RStudio**:
+   * Untuk bekerja sehari-hari, Anda cukup membuka aplikasi **RStudio** (R akan otomatis terpanggil di dalamnya).
+</div>
+
+---
+
+# Mengenal Lingkungan 4 Panel RStudio
+
+Saat Anda membuka RStudio dan membuat lembar skrip baru melalui menu **File > New File > R Script** (atau menekan `Ctrl + Shift + N`), layar RStudio akan terbagi menjadi **4 panel utama**:
+
+| Panel RStudio | Posisi Layar | Fungsi Utama dalam Komputasi Statistik |
+| :--- | :--- | :--- |
+| **1. Source (Script Editor)** | **Kiri Atas** | Tempat menulis, mengedit, dan menyimpan barisan kode dalam file `.R` atau `.Rmd`. Kode tidak langsung hilang setelah dijalankan. |
+| **2. Console** | **Kiri Bawah** | Tempat "mesin R" mengeksekusi perintah secara langsung dan mencetak hasil perhitungan angka, tabel ANOVA, atau pesan *error*. |
+| **3. Environment & History** | **Kanan Atas** | Memantau seluruh objek data (*data frame*, vektor, matriks, objek model `aov`/`lm`) yang sedang aktif tersimpan di memori komputer. |
+| **4. Files, Plots, Packages, Help** | **Kanan Bawah** | Menjelajahi folder kerja (*Files*), menampilkan grafik (*Plots*), mengelola paket (*Packages*), dan membaca panduan rumus/argumen fungsi (*Help*). |
+
+<div class="kotak-interpretasi">
+**Tips Eksekusi Kode Cepat di RStudio:**
+
+* Letakkan kursor pada baris kode di panel **Source** (atau blok beberapa baris sekaligus), lalu tekan **`Ctrl + Enter`** (Windows/Linux) atau **`Cmd + Return`** (macOS) untuk mengirim dan menjalankan baris tersebut ke **Console**.
+* Tanda **`>`** pada *Console* berarti R siap menerima perintah baru.
+* Tanda **`+`** pada awal baris *Console* berarti perintah sebelumnya **belum lengkap** (misalnya lupa menutup tanda kurung `)` atau tanda kutip `"`). Tekan tombol `Esc` untuk membatalkannya.
+* Tanda pagar **`#`** digunakan untuk menulis **komentar/catatan penjelasan**; seluruh teks di sebelah kanan `#` pada baris tersebut akan diabaikan oleh R.
+</div>
+
+---
+
+# Fungsi, Paket, dan Direktori Kerja
+
+## Konsep Dasar & Kapan Digunakan
+
+Di dalam R, hampir seluruh pekerjaan statistik dilakukan dengan memanggil **fungsi (*function*)** yang memiliki pola penulisan baku:
+
+$$\text{nama\_fungsi}(\text{argumen}_1, \text{argumen}_2, \dots)$$
+
+Sebagian fungsi dasar seperti `mean()`, `sd()`, `aov()`, dan `lm()` sudah tersedia langsung sejak R diinstal (*base R*). Namun, untuk pengacakan lapangan, uji lanjut Duncan/BNJ, atau uji normalitas Lilliefors, kita membutuhkan fungsi tambahan yang dikemas di dalam **paket (*packages*)**. Selain itu, agar R mengetahui di folder mana file data `.csv` kita disimpan, kita perlu memahami pengaturan **direktori kerja (*working directory*)**.
+
+## Kode R Siap Pakai (Fungsi, Paket, & Direktori Kerja)
+
+```{r fungsi-paket-wd}
+# 1. Memanggil fungsi matematika & statistika dasar bawaan R
+angka_contoh <- c(10, 15, 20, 25, 30)
+
+mean(angka_contoh)   # Menghitung nilai rata-rata (mean)
+sd(angka_contoh)     # Menghitung simpangan baku (standard deviation)
+sum(angka_contoh)    # Menghitung jumlah total seluruh pengamatan
+sqrt(144)            # Menghitung akar kuadrat
+
+# 2. Membuka panduan resmi suatu fungsi (jalankan di RStudio tanpa tanda '#')
+# ?aov
+# ?lm
+# help(read.csv)
+
+# 3. Perbedaan instalasi paket vs pemanggilan paket:
+# install.packages("agricolae")  # CUKUP 1 KALI saja saat paket belum terpasang
+library(agricolae)               # WAJIB dijalankan setiap membuka sesi RStudio baru
+
+# 4. Mengecek direktori kerja aktif saat ini
+getwd()
+
+# Contoh mengubah direktori kerja (PENTING: gunakan garis miring '/', BUKAN '\')
+# setwd("D:/Analisis_Statistik_R")
+```
+
+## Cara Membaca Output R
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output Console:**
+
+* Angka **`[1]`** di depan hasil seperti `[1] 20` menunjukkan bahwa angka `20` adalah **elemen urutan pertama** dari hasil perhitungan (bukan nomor baris soal).
+* Perhatikan perbedaan krusial antara `install.packages("agricolae")` (menggunakan **tanda kutip** karena mengunduh paket dari internet ke *hard disk* — ibarat membeli buku ke perpustakaan rumah) dan `library(agricolae)` (boleh tanpa tanda kutip, dijalankan setiap sesi baru — ibarat mengambil buku dari rak ke meja belajar).
+* Saat menulis alamat folder pada `setwd()` di Windows, selalu ubah tanda *backslash* `\` bawaan Windows Explorer menjadi garis miring maju `/` (atau `\\`) agar R tidak menganggapnya karakter khusus.
+</div>
+
+---
+
+# Operator Dasar di R
+
+## Konsep Dasar & Konteks Penggunaan
+
+Sebagaimana kalkulator ilmiah dan bahasa logika matematika, R menyediakan empat kelompok operator utama yang akan terus digunakan saat mentransformasi peubah, menghitung rumus manual (seperti $Z$ Fisher atau statistik $F_{\max}$ Hartley), serta menyaring baris pengamatan tertentu.
+
+| Kelompok Operator | Simbol di R | Makna & Kegunaan Praktis |
+| :--- | :--- | :--- |
+| **Penugasan (*Assignment*)** | `<-`, `=` | Menyimpan nilai atau hasil analisis ke dalam suatu nama objek (standar komunitas R adalah `<-`). |
+| **Aritmatika** | `+`, `-`, `*`, `/`, `^`, `%%`, `%/%` | Penjumlahan, pengurangan, perkalian, pembagian, pangkat, sisa bagi (*modulo*), dan pembagian bulat. |
+| **Perbandingan (*Relational*)** | `==`, `!=`, `>`, `<`, `>=`, `<=` | Membandingkan dua nilai dan menghasilkan logika `TRUE` (benar) atau `FALSE` (salah). |
+| **Logika (*Logical*)** | `&`, `|`, `!` | Menggabungkan beberapa syarat sekaligus: DAN (`&`), ATAU (`|`), serta negasi/kebalikan (`!`). |
+
+## Kode R Siap Pakai (4 Kelompok Operator)
+
+```{r operator-dasar}
+# 1. Operator Penugasan (Assignment)
+hasil_panen <- 125.5   # Cara yang paling direkomendasikan di R (shortcut: Alt + -)
+jumlah_petak = 24      # Alternatif penugasan
+hasil_panen
+jumlah_petak
+
+# 2. Operator Aritmatika
+6 + 4     # Penjumlahan
+6 - 4     # Pengurangan
+6 * 4     # Perkalian
+6 / 4     # Pembagian desimal
+6 ^ 4     # Pemangkatan (6 pangkat 4)
+6 %% 4    # Modulo (sisa pembagian 6 dibagi 4)
+6 %/% 4   # Pembagian bilangan bulat
+
+# Prioritas kurung dalam perhitungan rumus
+(6 + 4) * 2
+6 + 4 * 2
+
+# 3. Operator Perbandingan
+a <- 25
+b <- 27
+
+a == b    # Apakah a sama persis dengan b? (Perhatikan: dua tanda sama dengan '==')
+a != b    # Apakah a TIDAK sama dengan b?
+a > b     # Apakah a lebih besar dari b?
+a <= b    # Apakah a lebih kecil atau sama dengan b?
+
+# 4. Operator Logika per elemen vektor
+v     <- c(TRUE, TRUE, FALSE)
+t_log <- c(FALSE, TRUE, FALSE)
+
+v & t_log   # Logika DAN: bernilai TRUE hanya jika KEDUANYA TRUE
+v | t_log   # Logika ATAU: bernilai TRUE jika SALAH SATU atau keduanya TRUE
+!v          # Negasi: membalik TRUE menjadi FALSE dan sebaliknya
+```
+
+## Cara Membaca Output & Catatan Penting Pemula
+
+<div class="kotak-interpretasi">
+**Kesalahan Umum Pemula yang Wajib Dihindari:**
+
+* Jangan tertukar antara `=` (mengisi nilai/argumen fungsi) dengan `==` (menguji kesamaan dua nilai). Jika Anda ingin menyaring data perlakuan Kontrol, tulislah `Perlakuan == "Kontrol"`, bukan `Perlakuan = "Kontrol"`.
+* Untuk menyaring vektor atau kolom *data frame*, selalu gunakan operator per-elemen satu simbol (`&` dan `|`), karena operator tersebut mengevaluasi setiap baris pengamatan satu per satu.
+</div>
+
+---
+
+# Tipe Data & Struktur Data di R
+
+## Konsep Dasar & Mengapa `factor` Sangat Krusial dalam Analisis Ragam
+
+Sebelum menjalankan ANOVA atau Regresi, kita wajib mengenali bagaimana R membedakan **jenis nilai satuan (*Tipe Data*)** dan **wadah penyusun datanya (*Struktur Data*)**.
+
+<div class="kotak-konsep">
+**4 Tipe Data Dasar di R:**
+
+1. **`numeric`**: Bilangan riil/desimal maupun bulat untuk peubah kuantitatif (contoh: hasil gabah `5.82` ton/ha, kadar nitrogen `28.8` mg, suhu `88.6` °F).
+2. **`character`**: Teks atau untai huruf yang diapit tanda petik `"..."` (contoh: nama lokasi atau label keterangan).
+3. **`logical`**: Nilai kebenaran logika yang hanya berisi `TRUE` atau `FALSE`.
+4. **`factor`**: Peubah kategorik yang memiliki kelompok/taraf (*levels*) tetap, baik nominal maupun bertingkat (*ordered*).
+
+**Peringatan Kritis untuk Analisis Ragam (ANOVA):**
+Apabila taraf perlakuan berupa kode angka (misalnya dosis fumigan `0, 16, 32, 48, 64` atau kelompok `1, 2, 3, 4`) dan dibiarkan bertipe `numeric`, fungsi `aov()` akan menganggapnya sebagai **satu peubah regresi kontinu berderajat bebas 1**, bukan 5 taraf perlakuan berderajat bebas $5 - 1 = 4$! Oleh karena itu, biasakan selalu mengubah peubah Perlakuan dan Kelompok menjadi `factor()`.
+</div>
+
+Selain empat tipe data dasar, R menyusun sekumpulan nilai ke dalam **5 struktur data utama**:
+
+| Struktur Data | Dimensi | Syarat Tipe Data | Fungsi Pembuat & Penggunaan dalam Analisis Data |
+| :--- | :--- | :--- | :--- |
+| **1. Vector** | 1D (Baris deret) | Harus seragam (semua angka atau semua teks) | `c()`, `seq()`, `rep()` — Menyimpan satu deret pengamatan. |
+| **2. Matrix** | 2D (Baris $\times$ Kolom) | Harus seragam | `matrix()`, `cbind()`, `rbind()` — Tabel kontingensi $\chi^2$, matriks kontras ortogonal, dan aljabar matriks regresi $(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{Y}$. |
+| **3. Array** | Multi-dimensi ($\ge 3\text{D}$) | Harus seragam | `array()` — Tumpukan beberapa matriks berukuran sama. |
+| **4. Data Frame** | 2D (Tabel Baris $\times$ Kolom) | **Boleh berbeda antar-kolom** (kolom 1 *factor*, kolom 2 *numeric*) | `data.frame()` — **Struktur standar utama** untuk seluruh dataset ANOVA, Korelasi, dan Regresi! |
+| **5. List** | Kumpulan bebas | Bebas (bisa mencampur vektor, matriks, tabel, hingga model) | `list()` — Struktur keluaran internal dari fungsi `aov()`, `lm()`, dan `LSD.test()`. |
+
+## Kode R Siap Pakai (4 Tipe Data & 5 Struktur Data)
+
+### Pemeriksaan 4 Tipe Data Dasar
+
+```{r tipe-data}
+# 1. Numeric
+bobot_gabah <- 5.82
+class(bobot_gabah)
+
+# 2. Character
+nama_varietas <- "Padi S-969"
+class(nama_varietas)
+
+# 3. Logical
+lolos_uji_benih <- TRUE
+class(lolos_uji_benih)
+
+# 4. Factor (Tanpa urutan vs Berurutan / Ordered)
+dosis <- c("50gr", "75gr", "100gr", "50gr", "75gr", "100gr", "50gr", "75gr", "100gr", "50gr")
+
+# Penting: atur argumen 'levels' agar urutan tidak teracak secara alfabetis ("100gr" dulu)!
+faktor_dosis <- factor(dosis, levels = c("50gr", "75gr", "100gr"))
+faktor_dosis
+class(faktor_dosis)
+
+# Faktor bertingkat (ordered = TRUE) untuk kategori ordinal
+faktor_dosis_urut <- factor(dosis, levels = c("50gr", "75gr", "100gr"), ordered = TRUE)
+faktor_dosis_urut
+```
+
+### Pembuatan & Akses 5 Struktur Data
+
+```{r struktur-data}
+# --- 1. VECTOR ---
+kebun  <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
+divisi <- c(rep("div 1", 3), rep("div 2", 3), rep("div 3", 4))
+panen  <- c(100, 120, 110, 105, 135, 125, 130, 115, 140, 145)
+
+# Membuat barisan angka otomatis dan mengambil elemen tertentu dengan [ ]
+seq(from = 0, to = 64, by = 16)
+panen[1]           # Mengambil pengamatan ke-1
+panen[c(1, 2, 5)]  # Mengambil pengamatan ke-1, ke-2, dan ke-5
+length(panen)      # Mengecek jumlah amatan (n)
+
+# --- 2. MATRIX ---
+mat_kolom <- matrix(1:9, nrow = 3, ncol = 3)               # Diisi per kolom (default)
+mat_baris <- matrix(1:9, nrow = 3, ncol = 3, byrow = TRUE) # Diisi per baris
+mat_kolom
+mat_baris
+
+# Menggabungkan dua vektor menjadi kolom (cbind) atau baris (rbind)
+x <- 1:4
+y <- 10:13
+cbind(x, y)
+rbind(x, y)
+
+# --- 3. ARRAY ---
+arr <- array(1:24, dim = c(4, 3, 2)) # 4 baris, 3 kolom, 2 lapisan matriks
+arr
+
+# --- 4. DATA FRAME (Tabel Pengamatan Percobaan) ---
+datapanen <- data.frame(
+  kebun  = kebun,
+  divisi = factor(divisi),
+  panen  = panen
+)
+datapanen
+
+# Mengambil satu kolom dengan tanda '$' dan menyaring baris pengamatan
+datapanen$panen
+mean(datapanen$panen)
+subset(datapanen, panen > 120)
+
+# --- 5. LIST ---
+contoh_list <- list(
+  Judul   = "Data Panen Percobaan",
+  Matriks = mat_baris,
+  Tabel   = datapanen
+)
+contoh_list$Judul
+```
+
+## Cara Membaca Output Struktur Data
+
+<div class="kotak-interpretasi">
+**Cara Membaca Indeks & Pemanggilan Objek:**
+
+* Pada **Vector**, angka di dalam kurung siku `[i]` menunjukkan posisi urutan elemen.
+* Pada **Matrix** dan **Data Frame**, indeks `[baris, kolom]` menunjukkan koordinat sel; misalnya `[2, ]` berarti seluruh baris ke-2, dan `[, 3]` berarti seluruh kolom ke-3.
+* Operator tanda dolar **`$`** (seperti `datapanen$panen` atau `contoh_list$Tabel`) adalah cara paling bersih untuk memanggil satu kolom spesifik dari *data frame* atau satu komponen spesifik dari *list*.
+* Perhatikan bahwa ketika kita tidak mengatur `levels = c("50gr", "75gr", "100gr")`, R secara otomatis mengurutkan huruf berdasarkan abjad (`"100gr"`, `"50gr"`, `"75gr"` karena karakter `'1'` muncul sebelum `'5'`). Menentukan `levels` secara eksplisit membuat urutan perlakuan pada tabel dan grafik selalu rapi mulai dari Kontrol/dosis terendah ke dosis tertinggi.
+</div>
+
+---
+
+# Mengimpor Data ke R & Pemeriksaan Awal Dataset
+
+## Konsep Dasar & Konteks Kasus
+
+Dalam praktik penelitian nyata, data pengamatan lapangan atau laboratorium umumnya dicatat terlebih dahulu di lembar sebar (*spreadsheet* seperti Microsoft Excel) lalu disimpan ke format **CSV (*Comma-Separated Values*)** atau `.xlsx`.
+
+<div class="kotak-kasus">
+**Konteks Kasus Latihan Impor Data (`01_padi_rak_s969.csv`):**
+
+Kita akan mempraktikkan prosedur standar mengimpor dataset percobaan pemupukan **6 kombinasi pupuk NPK** (`Kontrol`, `PK`, `N`, `NP`, `NK`, `NPK`) pada tanaman **Padi Genotif S-969** yang ditanam pada **4 kelompok lahan sawah** (`I`, `II`, `III`, `IV`), memeriksa struktur kolomnya, mengubah kolom kategorik menjadi `factor`, serta membuat grafik kotak garis (*boxplot*) eksplorasi pertama.
+</div>
+
+## Prosedur Baku 4 Langkah Impor Data Percobaan
+
+Setiap kali mengimpor dataset pada analisis statistik di R, ikuti selalu 4 langkah disiplin berikut:
+
+$$\text{read.csv()} \longrightarrow \text{head() \& str()} \longrightarrow \text{factor()} \longrightarrow \text{summary() \& Grafik Eksplorasi}$$
+
+## Kode R Siap Pakai (Impor CSV/Excel & Eksplorasi)
+
+```{r impor-data, fig.cap="Boxplot eksplorasi sebaran hasil gabah Padi S-969 pada 6 perlakuan pupuk NPK."}
+# Langkah 1: Membaca file CSV dari folder data/
+df_padi <- read.csv("../data/01_padi_rak_s969.csv", sep = ",")
+
+# Langkah 2: Memeriksa 6 baris teratas, dimensi tabel, dan struktur awal
+head(df_padi)
+dim(df_padi)
+str(df_padi)
+
+# Langkah 3: Mengubah kolom Perlakuan dan Kelompok menjadi tipe 'factor' dengan urutan logis
+df_padi$Perlakuan <- factor(df_padi$Perlakuan,
+                            levels = c("Kontrol", "PK", "N", "NP", "NK", "NPK"))
+df_padi$Kelompok  <- factor(df_padi$Kelompok,
+                            levels = c("I", "II", "III", "IV"))
+
+# Langkah 4: Memverifikasi kembali struktur factor & ringkasan statistik 5 serangkai
+str(df_padi)
+summary(df_padi)
+
+# Catatan tambahan jika suatu saat mengimpor dari Excel (.xlsx) atau teks (.txt):
+# library(readxl)
+# df_excel <- readxl::read_xlsx("../data/NamaFile.xlsx", sheet = 1)
+# df_txt   <- read.delim("../data/NamaFile.txt", sep = "\t")
+
+# Visualisasi eksplorasi awal dengan Boxplot
+boxplot(Hasil_Gabah ~ Perlakuan, data = df_padi,
+        col  = c("#d5dbdb", "#aed6f1", "#85c1e9", "#5dade2", "#3498db", "#2e86c1"),
+        main = "Sebaran Hasil Gabah Padi S-969 per Perlakuan Pupuk NPK",
+        xlab = "Perlakuan Kombinasi Pupuk",
+        ylab = "Hasil Gabah (ton/ha)")
+```
+
+## Cara Membaca Output R & Kesimpulan Eksplorasi
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `str()`, `summary()`, dan `boxplot()`:**
+
+1. **Output `dim(df_padi)`**: Menghasilkan `[1] 24  3`, artinya terdapat **24 satuan pengamatan (petak sawah)** dan **3 peubah (kolom)**, sesuai dengan rancangan $6 \text{ perlakuan} \times 4 \text{ kelompok} = 24$ petak.
+2. **Perubahan pada `str(df_padi)`**: Sebelum dikonversi, `Perlakuan` dan `Kelompok` tertulis sebagai `chr` (*character*). Setelah dikonversi dengan `factor()`, keduanya berubah menjadi `Factor w/ 6 levels` dan `Factor w/ 4 levels`, sedangkan `Hasil_Gabah` bertipe `num` (*numeric*). Ini menandakan dataset **100% siap dianalisis dengan `aov()`**.
+3. **Output `summary(df_padi)`**:
+   * Untuk peubah `factor` (`Perlakuan` dan `Kelompok`), R menampilkan **frekuensi/jumlah ulangan tiap taraf** (masing-masing perlakuan diulang 4 kali dan tiap kelompok memuat 6 perlakuan — data lengkap/seimbang!).
+   * Untuk peubah `numeric` (`Hasil_Gabah`), R menampilkan nilai minimum (`3.660`), kuartil pertama (`4.588`), median (`5.475`), rata-rata umum (`5.252` ton/ha), kuartil ketiga (`5.912`), dan maksimum (`6.700` ton/ha).
+4. **Kesimpulan Visual Boxplot**: Terlihat jelas adanya peningkatan hasil gabah secara konsisten dari perlakuan `Kontrol` (sekitar 4,0 ton/ha) menuju pemupukan lengkap `NPK` (melampaui 6,0 ton/ha), terutama ketika unsur Nitrogen (`N`) diberikan. Untuk membuktikan apakah perbedaan ini nyata secara statistik atau hanya kebetulan acak, kita akan mengujinya melalui **Analisis Ragam (ANOVA)** pada **Modul 01**!
+</div>

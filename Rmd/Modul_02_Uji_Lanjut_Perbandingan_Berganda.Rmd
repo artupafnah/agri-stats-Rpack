@@ -1,0 +1,618 @@
+---
+title: "Modul 02: Perbandingan Nilai Tengah Berganda (Uji Lanjut)"
+output:
+  rmdformats::robobook:
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: show
+    toc_depth: 3
+    use_bookdown: true
+    css: "../assets/style_robobook.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 5,
+  comment = "#>"
+)
+```
+
+# Peta Keputusan Pemilihan Metode Uji Lanjut
+
+Ketika uji $F$ pada tabel ANOVA menghasilkan `Pr(>F) < 0.05` (Tolak $H_0$), kita baru memperoleh kesimpulan umum bahwa **minimal ada sepasang perlakuan yang memiliki nilai tengah berbeda nyata**. Untuk mengetahui **perlakuan mana yang terbaik** atau **bagaimana pola hubungan taraf perlakuan terhadap respon**, kita wajib melanjutkan analisis dengan **Uji Perbandingan Berganda (*Multiple Comparison Procedures*)**.
+
+Pemilihan uji lanjut tidak boleh dilakukan secara sembarangan, melainkan bergantung pada **struktur perlakuan** dan **kapan hipotesis perbandingan dirumuskan**:
+
+| Kategori | Metode Uji Lanjut | Kapan Digunakan (Kriteria Praktis) | Tingkat Kekekaran Salah Tipe I |
+| :--- | :--- | :--- | :--- |
+| **Tak Terencana (*Post-Hoc*)** | **1. BNT (*Fisher's LSD*)** | Perlakuan kualitatif tanpa struktur, **jumlah perlakuan sedikit ($t \le 3$)**. | Paling longgar (paling sensitif, rawan salah Tipe I jika $t$ besar) |
+| **Tak Terencana (*Post-Hoc*)** | **2. Duncan (DMRT)** | Perlakuan kualitatif **($t > 3$)**, peneliti ingin uji berdaya pisah (*power*) tinggi di bidang agronomi. | Moderat (nilai kritis bertingkat $R_p$) |
+| **Tak Terencana (*Post-Hoc*)** | **3. SNK (*Student-Newman-Keuls*)** | Perlakuan kualitatif **($t > 3$)**, kompromi antara kepekaan Duncan dan keketatan BNJ. | Moderat–Ketat (bertingkat berbasis sebaran $q$) |
+| **Tak Terencana (*Post-Hoc*)** | **4. Dunnett** | Tujuan khusus **hanya membandingkan $(t - 1)$ perlakuan terhadap 1 perlakuan Kontrol/Standar**. | Ketat khusus $(t - 1)$ pasangan terhadap kontrol |
+| **Tak Terencana (*Post-Hoc*)** | **5. BNJ (*Tukey's HSD*)** | Perlakuan kualitatif **($t > 3$)**, membandingkan seluruh pasangan dengan kendali salah Tipe I gabungan ketat. | Ketat (*konservatif*) |
+| **Tak Terencana (*Post-Hoc*)** | **6. Scheffe** | Menguji sembarang kontras kompleks yang baru terpikirkan setelah melihat data (*data snooping*). | **Paling konservatif** (nilai kritis terbesar) |
+| **Terencana (*A Priori*)** | **7. Kontras Ortogonal** | Perlakuan **kualitatif terstruktur** dalam kelompok logis yang dirancang sejak awal percobaan. | Tajam & terfokus per komponen ($\text{db} = 1$) |
+| **Terencana (*A Priori*)** | **8. Polinomial Ortogonal** | Perlakuan **kuantitatif berjarak/bertaraf** (dosis, jarak tanam, waktu) untuk mencari kurva tren. | Tajam untuk evaluasi bentuk fungsi respon |
+
+---
+
+# Analisis 2.1: Uji Beda Nyata Terkecil (BNT / Fisher's LSD) — Ulangan Sama & Tidak Sama
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Uji BNT (*Least Significant Difference*):**
+
+Uji BNT yang diperkenalkan oleh R.A. Fisher pada dasarnya adalah kumpulan **uji-$t$ dua sampel bebas** yang menggunakan penduga ragam gabungan **Kuadrat Tengah Galat ($\text{KTG}$)** dari tabel ANOVA. Dua rata-rata perlakuan ($\bar{Y}_{i\cdot}$ dan $\bar{Y}_{j\cdot}$) dinyatakan berbeda nyata apabila selisih mutlaknya $|\bar{Y}_{i\cdot} - \bar{Y}_{j\cdot}|$ melampaui nilai ambang **$\text{BNT}_\alpha$**.
+
+* Jika seluruh perlakuan memiliki **ulangan sama ($r$)**, hanya ada **satu nilai kritis $\text{BNT}_\alpha$ tunggal**.
+* Jika terjadi kerusakan satuan percobaan sehingga **ulangan tidak sama ($r_i \neq r_j$)**, nilai kritis $\text{BNT}_{\alpha(i,j)}$ dihitung secara khusus untuk setiap pasangan $(i, j)$ sesuai ukuran ulangannya masing-masing.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus & Kriteria Pemilihan BNT:**
+
+* **Kapan Digunakan?** Gunakan Uji BNT **hanya setelah uji $F$ ANOVA nyata (*protected LSD*)** dan idealnya ketika **jumlah perlakuan tidak lebih dari 3 ($t \le 3$)**. Mengapa? Karena untuk $t = 6$ perlakuan terdapat $\binom{6}{2} = 15$ pasangan perbandingan; jika tiap pasangan diuji pada $\alpha = 0,05$, peluang melakukan minimal satu kesalahan Tipe I meningkat drastis menjadi $1 - (1 - 0,05)^{15} \approx 53,7\%$!
+* **Kasus Demonstrasi**: Kita menggunakan dataset inokulasi **6 strain *Rhizobium* pada tanaman *Red Clover*** (`data/02_red_clover_ral.csv`, $r = 5$) untuk membandingkan sifat BNT terhadap uji lainnya, sekaligus mensimulasikan kasus **ulangan tidak sama** apabila 2 pot tanaman mengalami kerusakan fisik di rumah kaca (menyisakan $r = 4$ pada `3DOK1` dan `3DOK5`, serta $r = 5$ pada strain lainnya).
+</div>
+
+## Model Rumus Nilai Kritis & Hipotesis
+
+Untuk setiap pasangan perlakuan ke-$i$ dan ke-$j$ ($i \neq j$), hipotesis yang diuji adalah:
+
+$$H_0 : \mu_i = \mu_j \quad \text{lawan} \quad H_1 : \mu_i \neq \mu_j$$
+
+Rumus pembanding kritis $\text{BNT}_\alpha$ pada taraf nyata $\alpha$ dengan derajat bebas galat $\text{db}_g$:
+
+$$\text{BNT}_\alpha \text{ (Ulangan Sama)} = t_{\alpha/2;\; \text{db}_g} \sqrt{\frac{2 \cdot \text{KTG}}{r}}$$
+
+$$\text{BNT}_{\alpha(i,j)} \text{ (Ulangan Tidak Sama)} = t_{\alpha/2;\; \text{db}_g} \sqrt{\text{KTG}\left(\frac{1}{r_i} + \frac{1}{r_j}\right)}$$
+
+Tolak $H_0$ apabila $|\bar{Y}_{i\cdot} - \bar{Y}_{j\cdot}| > \text{BNT}_\alpha$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r uji-bnt, fig.cap="Diagram batang rata-rata kadar nitrogen tanaman Red Clover beserta simpangan baku dan huruf notasi Uji BNT (LSD) pada ulangan sama."}
+library(agricolae)
+
+# Langkah 1: Memuat data Red Clover dan menjalankan model ANOVA RAL
+df_clover <- read.csv("../data/02_red_clover_ral.csv")
+df_clover$Perlakuan <- factor(
+  df_clover$Perlakuan,
+  levels = c("3DOK1", "3DOK5", "3DOK4", "3DOK7", "3DOK13", "Komposit")
+)
+model_ral <- aov(Kadar_N ~ Perlakuan, data = df_clover)
+
+# Langkah 2: Uji BNT (LSD) untuk Ulangan Sama (r = 5 di seluruh perlakuan)
+uji_bnt <- LSD.test(model_ral, "Perlakuan", alpha = 0.05, console = TRUE)
+
+# Visualisasi huruf pengelompokan hasil Uji BNT
+plot(uji_bnt, variation = "SD",
+     main = "Pengelompokan Huruf Uji BNT (LSD) Kadar Nitrogen Red Clover",
+     ylab = "Kadar Nitrogen (mg)")
+
+# Langkah 3: Demonstrasi Uji BNT untuk Ulangan Tidak Sama (misal pot baris ke-1 & ke-7 rusak)
+df_clover_unequal <- df_clover[-c(1, 7), ]
+table(df_clover_unequal$Perlakuan) # Mengecek ulangan tersisa per perlakuan
+
+model_ral_unequal <- aov(Kadar_N ~ Perlakuan, data = df_clover_unequal)
+uji_bnt_unequal   <- LSD.test(model_ral_unequal, "Perlakuan", alpha = 0.05, console = TRUE)
+
+# Menghitung nilai kritis spesifik BNT untuk tiap kombinasi jumlah ulangan (4 vs 4, 4 vs 5, 5 vs 5)
+ktg_un <- summary(model_ral_unequal)[[1]]["Residuals", "Mean Sq"]
+dbg_un <- df.residual(model_ral_unequal)
+t_kris <- qt(0.975, df = dbg_un)
+
+cat(sprintf("BNT(r=4 vs r=4) = %.2f mg | BNT(r=4 vs r=5) = %.2f mg | BNT(r=5 vs r=5) = %.2f mg\n",
+            t_kris * sqrt(ktg_un * (1/4 + 1/4)),
+            t_kris * sqrt(ktg_un * (1/4 + 1/5)),
+            t_kris * sqrt(ktg_un * (1/5 + 1/5))))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `LSD.test()`:**
+
+1. **Pada Kasus Ulangan Sama ($r = 5$)**:
+   * Nilai `Mean Square Error = 4.391667`, `DF Error = 24`, dan `Critical Value of t = 2.063899`.
+   * Diperoleh nilai kritis tunggal **`least Significant Difference = 2.7355` mg** ($\approx 2,74\text{ mg}$). Artinya, setiap pasangan strain yang selisih rata-ratanya melampaui $2,74\text{ mg}$ dinyatakan berbeda nyata pada $\alpha = 5\%$.
+   * **Cara Membaca Kolom Huruf (`groups`)**: Perlakuan diurutkan otomatis dari rata-rata tertinggi ke terendah: `3DOK1` ($28,8\text{ a}$), `3DOK5` ($24,0\text{ b}$), `3DOK7` ($19,9\text{ c}$), `Komposit` ($18,7\text{ c}$), `3DOK4` ($14,6\text{ d}$), dan `3DOK13` ($13,2\text{ d}$). **Dua perlakuan yang diikuti huruf yang sama tidak berbeda nyata** (contoh: selisih `3DOK7` dan `Komposit` hanya $|19,9 - 18,7| = 1,20 < 2,74\text{ mg}$ sehingga keduanya berbagi huruf `c`).
+2. **Pada Kasus Ulangan Tidak Sama ($r_i \neq r_j$)**:
+   * Perhatikan bahwa baris `least Significant Difference` tunggal **tidak lagi dicetak oleh R**, karena nilai kritis BNT kini berbeda tergantung ukuran ulangan pasangan yang dibandingkan: **`2.96` mg** untuk membandingkan sesama $r = 4$ (`3DOK1` vs `3DOK5`), **`2.81` mg** untuk $r = 4$ vs $r = 5$, dan **`2.65` mg** untuk sesama $r = 5$! Semakin sedikit ulangannya, semakin lebar ambang BNT yang harus dilampaui.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan uji lanjut BNT pada taraf nyata $\alpha = 5\%$ ($\text{BNT}_{0,05} = 2,74\text{ mg}$), inokulasi strain `3DOK1` menghasilkan rata-rata kadar nitrogen tertinggi sebesar $28,80\text{ mg}$ yang berbeda nyata lebih unggul dibandingkan seluruh strain lainnya, diikuti oleh `3DOK5` ($24,00\text{ mg}$), kelompok menengah `3DOK7` ($19,90\text{ mg}$) dan `Komposit` ($18,70\text{ mg}$) yang saling tidak berbeda nyata, serta kelompok terendah `3DOK4` ($14,60\text{ mg}$) dan `3DOK13` ($13,20\text{ mg}$)."*
+</div>
+
+---
+
+# Analisis 2.2: Uji Beda Nyata Jujur (BNJ / Tukey's HSD)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Uji BNJ (*Tukey's Honestly Significant Difference*):**
+
+Untuk mengatasi kelemahan Uji BNT yang membengkakkan peluang salah Tipe I saat jumlah perlakuan banyak, J.W. Tukey merancang **Uji Beda Nyata Jujur (BNJ / HSD)** berbasis sebaran **Wilayah Sebaran Student (*Studentized Range*, $q$)** yang mengukur selisih antara nilai maksimum dan nilai minimum dari $t$ peubah acak normal. Dengan memakai satu nilai kritis $w = \text{BNJ}_\alpha$, peluang terjadinya salah positif pada **seluruh keluarga perbandingan sekaligus (*family-wise error rate*)** dijaga ketat maksimal sebesar $\alpha$.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Kapan Memilih Uji BNJ / Tukey HSD?**
+
+* Gunakan **Uji BNJ** apabila **jumlah perlakuan lebih dari 3 ($t > 3$)**, Anda ingin membandingkan **seluruh pasangan rata-rata perlakuan**, dan Anda memprioritaskan **kehati-hatian tinggi (*konservatif*)** agar tidak telanjur merekomendasikan perlakuan yang sebenarnya tidak berbeda (misalnya dalam uji pelepasan varietas unggul nasional atau uji efikasi pupuk/pestisida komersial).
+* Kita terapkan Uji BNJ pada dataset **6 strain *Rhizobium* tanaman *Red Clover*** (`model_ral`) dengan dua cara di R: fungsi bawaan `TukeyHSD()` untuk melihat selang kepercayaan selisih pasangan, serta `agricolae::HSD.test()` untuk mendapatkan nilai kritis $\text{BNJ}_{0,05}$ dan huruf notasi.
+</div>
+
+## Model Rumus Nilai Kritis & Hipotesis
+
+Untuk seluruh $\binom{t}{2}$ pasangan nilai tengah populasi:
+
+$$H_0 : \mu_i = \mu_j \quad \text{lawan} \quad H_1 : \mu_i \neq \mu_j \quad (\forall\, i \neq j)$$
+
+Rumus pembanding kritis $\text{BNJ}_\alpha$ (ulangan sama $r$) dan perluasan Tukey-Kramer (ulangan tidak sama):
+
+$$\text{BNJ}_\alpha = w = q_{\alpha;\; t,\; \text{db}_g} \sqrt{\frac{\text{KTG}}{r}}, \qquad w_{(i,j)} = \frac{q_{\alpha;\; t,\; \text{db}_g}}{\sqrt{2}} \sqrt{\text{KTG}\left(\frac{1}{r_i} + \frac{1}{r_j}\right)}$$
+
+di mana $q_{\alpha;\; t,\; \text{db}_g}$ adalah nilai kuantil sebaran *Studentized Range* untuk $t$ perlakuan total dan derajat bebas galat $\text{db}_g$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r uji-bnj, fig.height=5.5, fig.cap="Selang kepercayaan simultan 95% Tukey HSD untuk seluruh 15 pasangan perbandingan strain Rhizobium."}
+# Cara 1: Menampilkan selisih pasangan, selang kepercayaan 95% (lwr..upr), & p-value terkoreksi
+tukey_ci <- TukeyHSD(model_ral, "Perlakuan", conf.level = 0.95)
+print(tukey_ci)
+
+# Visualisasi selang kepercayaan 95% selisih pasangan (garis vertikal putus-putus = 0)
+par(mar = c(5, 8.5, 4, 2))
+plot(tukey_ci, las = 1, col = "#2980b9")
+par(mar = c(5, 4, 4, 2) + 0.1)
+
+# Cara 2: Menampilkan nilai kritis tunggal BNJ (MSD) & tabel huruf notasi
+uji_bnj <- HSD.test(model_ral, "Perlakuan", alpha = 0.05, console = TRUE)
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `TukeyHSD()` dan `HSD.test()`:**
+
+1. **Nilai Kritis BNJ (`Minimun Significant Difference`)**:
+   * Dengan kuantil $q_{0,05(6, 24)} = 4,3727$, diperoleh **`MSD = 4.0980` mg** ($\approx 4,10\text{ mg}$).
+   * Bandingkan dengan BNT sebelumnya ($2,74\text{ mg}$): ambang BNJ **lebih lebar $1,36\text{ mg}$** karena BNJ menjaga tingkat kepercayaan gabungan 95% untuk seluruh 15 pasangan sekaligus!
+2. **Membaca Tabel & Grafik `TukeyHSD()`**:
+   * Setiap baris pasangan yang **selang kepercayaannya (`lwr` s.d. `upr`) TIDAK melintasi angka `0`** memiliki `p adj < 0.05` (berbeda nyata).
+   * Sebaliknya, hanya ada **dua pasangan yang melintasi garis vertikal `0`**, yaitu `3DOK13-3DOK4` (`diff = -1.4`, `p adj = 0.8936`) dan `Komposit-3DOK7` (`diff = -1.2`, `p adj = 0.9413`). Perhatikan pasangan `3DOK7-3DOK5` dan `Komposit-3DOK4` yang memiliki selisih mutlak tepat `4.10` mg (`p adj = 0.0498 < 0.05`), tepat melampaui ambang kritis `4.098` mg!
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan uji lanjut Beda Nyata Jujur (Tukey HSD) pada taraf nyata $\alpha = 5\%$ ($\text{BNJ}_{0,05} = 4,10\text{ mg}$), strain `3DOK1` ($28,80\text{ mg}$, huruf `a`) memberikan serapan nitrogen tertinggi yang berbeda nyata terhadap kelima perlakuan lainnya, sedangkan `3DOK4` ($14,60\text{ mg}$) dan `3DOK13` ($13,20\text{ mg}$) menempati kelompok terendah (huruf `d`)."*
+</div>
+
+---
+
+# Analisis 2.3: Uji Jarak Berganda Duncan (DMRT)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Mengapa Duncan Memakai Nilai Kritis Bertingkat ($R_p$)?**
+
+Jika BNT terlalu longgar dan BNJ terkadang dirasa terlalu kaku saat jumlah perlakuan besar, **Uji Jarak Berganda Duncan (*Duncan's New Multiple Range Test* / DMRT)** mengambil jalan tengah yang sangat cerdas: setelah rata-rata perlakuan diurutkan, **pasangan rata-rata yang letaknya bersebelahan ($p = 2$) diuji dengan ambang yang kecil**, sedangkan **pasangan rata-rata yang jarak urutannya berjauhan ($p = 3, 4, \dots, t$) diuji dengan ambang $R_p$ yang semakin besar**!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Kapan Memilih Uji Duncan / DMRT?**
+
+* Gunakan **DMRT** apabila **jumlah perlakuan cukup banyak ($t > 3$)** pada percobaan agronomi, pemuliaan tanaman, atau nutrisi ternak, di mana peneliti menginginkan **sensitivitas (daya pisah) yang lebih tinggi** dibandingkan BNJ untuk menyaring kandidat perlakuan potensial tanpa selonggar BNT.
+* Kita terapkan DMRT pada dataset **6 strain *Rhizobium* tanaman *Red Clover*** (`model_ral`).
+</div>
+
+## Model Rumus Nilai Kritis Bertingkat & Hipotesis
+
+Untuk dua rata-rata perlakuan terurut yang mencakup rentang sebanyak $p$ buah nilai tengah ($p = 2, 3, \dots, t$):
+
+$$H_0 : \mu_{(i)} = \mu_{(j)} \quad \text{lawan} \quad H_1 : \mu_{(i)} \neq \mu_{(j)}$$
+
+Tingkat salah Tipe I proteksi Duncan pada rentang $p$ adalah $\alpha_p = 1 - (1 - \alpha)^{p - 1}$, dengan **Jarak Nyata Terkecil Duncan ($R_p$)**:
+
+$$R_p = r_{\alpha;\; p,\; \text{db}_g} \sqrt{\frac{\text{KTG}}{r}}, \qquad p = 2, 3, \dots, t$$
+
+di mana $r_{\alpha;\; p,\; \text{db}_g}$ adalah nilai kritis tabel wilayah berganda Duncan. Khusus untuk $p = 2$ (dua perlakuan bersebelahan), nilai $R_2$ sama persis dengan nilai $\text{BNT}_\alpha$!
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r uji-duncan, fig.cap="Pengelompokan huruf hasil Uji Jarak Berganda Duncan (DMRT) pada kadar nitrogen Red Clover."}
+# Menjalankan Uji Jarak Berganda Duncan (DMRT) pada alpha = 5%
+uji_duncan <- duncan.test(model_ral, "Perlakuan", alpha = 0.05, console = TRUE)
+
+# Menampilkan secara eksplisit tabel nilai kritis bertingkat Rp untuk jarak peringkat p = 2..6
+uji_duncan$duncan
+
+# Visualisasi barplot dengan huruf notasi DMRT
+plot(uji_duncan, variation = "SD",
+     main = "Pengelompokan Huruf Uji Jarak Berganda Duncan (DMRT)",
+     ylab = "Kadar Nitrogen (mg)")
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `duncan.test()`:**
+
+1. **Tabel `Critical Range` Bertingkat ($R_2$ s.d. $R_6$)**:
+   * Untuk membandingkan 2 rata-rata bersebelahan ($p = 2$, misal `3DOK1` vs `3DOK5`), nilai kritisnya adalah **`R_2 = 2.7355` mg** (identik dengan BNT!).
+   * Untuk rentang 3 rata-rata ($p = 3$): **`R_3 = 2.8731` mg**; $p = 4$: **`R_4 = 2.9614` mg**; $p = 5$: **`R_5 = 3.0238` mg**; dan untuk rentang terjauh dari peringkat ke-1 hingga ke-6 ($p = 6$, yaitu `3DOK1` vs `3DOK13`): **`R_6 = 3.0704` mg**.
+   * Perhatikan bahwa bahkan pada jarak terjauh sekalipun ($R_6 = 3,07\text{ mg}$), nilai kritis Duncan masih lebih kecil (lebih peka) daripada nilai kritis BNJ Tukey ($4,10\text{ mg}$).
+2. **Hasil Pengelompokan Huruf**: Keenam perlakuan terbagi tegas menjadi empat kelompok mutu: `a` (`3DOK1`), `b` (`3DOK5`), `c` (`3DOK7` dan `Komposit`), serta `d` (`3DOK4` dan `3DOK13`).
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan Uji Jarak Berganda Duncan (DMRT) pada taraf nyata $\alpha = 5\%$ dengan rentang kritis $R_2 = 2,74\text{ mg}$ hingga $R_6 = 3,07\text{ mg}$, inokulasi strain `3DOK1` ($28,80\text{ mg}$) berbeda nyata melampaui seluruh perlakuan lainnya, sementara strain `3DOK7` ($19,90\text{ mg}$) tidak berbeda nyata dengan kultur standar `Komposit` ($18,70\text{ mg}$)."*
+</div>
+
+---
+
+# Analisis 2.4: Uji Lanjut Tak Terencana Lainnya — SNK, Dunnett, & Scheffe
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Tiga Uji Spesifik (SNK, Dunnett, & Scheffe):**
+
+1. **Uji *Student-Newman-Keuls* (SNK)**: Bekerja secara bertingkat dari jarak peringkat $p = 2, 3, \dots, t$ persis seperti Duncan, tetapi menggunakan kuantil *Studentized Range* Tukey $q_{\alpha;\; p,\; \text{db}_g}$ pada setiap jenjang $p$, sehingga tingkat proteksinya berada tepat di antara Duncan dan BNJ.
+2. **Uji Dunnett**: Dirancang khusus untuk percobaan yang memiliki **satu perlakuan Kontrol/Standar ($K$)**. Alih-alih menguji seluruh $\binom{t}{2}$ pasangan, Dunnett **hanya menguji $(t - 1)$ pasangan** antara tiap perlakuan kandidat melawan Kontrol, sehingga nilai kritisnya jauh lebih hemat/tajam daripada BNJ!
+3. **Uji Scheffe**: Menggunakan sebaran $F$ untuk melindungi tingkat kesalahan Tipe I terhadap **segala kemungkinan kontras linier tak terbatas** yang baru digagas setelah peneliti melihat pola angka rata-rata (*post-hoc data snooping*).
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Kriteria Praktis Memilih SNK vs Dunnett vs Scheffe:**
+
+* Pilih **SNK** bila menginginkan prosedur bertahap namun lebih ketat dari DMRT.
+* Pilih **Uji Dunnett** bila pertanyaan riset Anda murni berbunyi: *"Strain murni mana saja (`3DOK1`..`3DOK13`) yang mampu mengalahkan atau lebih buruk dibandingkan kultur campuran komersial **`Komposit`** sebagai Kontrol?"*
+* Pilih **Uji Scheffe** hanya jika setelah melihat data Anda ingin menguji perbandingan gabungan tak terencana (misal rata-rata 2 strain terbaik vs rata-rata 3 strain lainnya).
+</div>
+
+## Model Rumus Nilai Kritis & Hipotesis
+
+1. **Nilai Kritis Bertingkat SNK**:
+   $$W_p = q_{\alpha;\; p,\; \text{db}_g} \sqrt{\frac{\text{KTG}}{r}}, \qquad p = 2, 3, \dots, t$$
+2. **Hipotesis & Nilai Kritis Uji Dunnett** (dengan perlakuan ke-$0$ sebagai Kontrol):
+   $$H_0 : \mu_i = \mu_0 \quad \text{lawan} \quad H_1 : \mu_i \neq \mu_0 \quad (i = 1, 2, \dots, t - 1)$$
+   $$D_\alpha = d_{\alpha;\; t-1,\; \text{db}_g} \sqrt{\frac{2 \cdot \text{KTG}}{r}}$$
+3. **Nilai Kritis Uji Scheffe** (untuk perbandingan pasangan rata-rata):
+   $$S_\alpha = \sqrt{(t - 1) F_{\alpha;\; t-1,\; \text{db}_g}} \sqrt{\frac{2 \cdot \text{KTG}}{r}}$$
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r uji-snk-dunnett-scheffe}
+library(multcomp)
+
+# 1. Uji Student-Newman-Keuls (SNK)
+uji_snk <- SNK.test(model_ral, "Perlakuan", alpha = 0.05, console = TRUE)
+
+# 2. Uji Scheffe (paling konservatif)
+uji_scheffe <- scheffe.test(model_ral, "Perlakuan", alpha = 0.05, console = TRUE)
+
+# 3. Uji Dunnett: Menjadikan perlakuan "Komposit" sebagai grup Kontrol acuan (ref)
+df_clover$Perlakuan_Dunnett <- relevel(df_clover$Perlakuan, ref = "Komposit")
+model_dunnett <- aov(Kadar_N ~ Perlakuan_Dunnett, data = df_clover)
+
+uji_dunnett <- glht(model_dunnett, linfct = mcp(Perlakuan_Dunnett = "Dunnett"))
+summary(uji_dunnett)              # Statistik uji-t Dunnett dan p-value terkoreksi
+confint(uji_dunnett, level = 0.95) # Selang kepercayaan simultan 95% terhadap Kontrol
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Perbandingan Komprehensif Hasil Keenam Uji Tak Terencana pada *Red Clover*:**
+
+1. **Urutan Nilai Ambang Kritis ($\alpha = 5\%$)** dari yang paling peka hingga paling ketat pada data ini adalah:
+   $$\text{BNT } (2,74) \le \text{Duncan } (2,74\text{--}3,07) \le \text{Dunnett } (3,57) \le \text{SNK } (2,74\text{--}4,10) \le \text{BNJ } (4,10) < \text{Scheffe } (4,80)$$
+2. **Dampak Keketatan Uji Scheffe (`Minimum Significant Difference = 4.80` mg)**:
+   * Karena ambang Scheffe mencapai $4,80\text{ mg}$, selisih sebesar $4,10\text{ mg}$ antara `3DOK5` ($24,0$) vs `3DOK7` ($19,9$) maupun antara `Komposit` ($18,7$) vs `3DOK4` ($14,6$) **belum dianggap nyata oleh Scheffe**, menghasilkan huruf notasi yang saling tumpang-tindih (`a`, `b`, `bc`, `cd`, `de`, `e`)! Ini membuktikan mengapa Scheffe tidak disarankan untuk perbandingan berpasangan biasa.
+3. **Membaca Output Uji Dunnett (`glht` terhadap Kontrol `Komposit = 18.70` mg)**:
+   * Hanya ada **5 baris hipotesis** (masing-masing strain dikurangi `Komposit`):
+     * `3DOK1 - Komposit = +10.10 mg` (`t = 7.620, p < 0.001 ***`) $\rightarrow$ **Nyata lebih tinggi** dari Kontrol.
+     * `3DOK5 - Komposit = +5.30 mg` (`t = 3.999, p = 0.00244 **`) $\rightarrow$ **Nyata lebih tinggi** dari Kontrol.
+     * `3DOK7 - Komposit = +1.20 mg` (`t = 0.905, p = 0.83174 ns`) $\rightarrow$ **Tidak berbeda nyata** dengan Kontrol.
+     * `3DOK4 - Komposit = -4.10 mg` (`t = -3.093, p = 0.02055 *`) $\rightarrow$ **Nyata lebih rendah** dari Kontrol.
+     * `3DOK13 - Komposit = -5.50 mg` (`t = -4.150, p = 0.00168 **`) $\rightarrow$ **Nyata lebih rendah** dari Kontrol.
+
+**Kalimat Kesimpulan Siap Kutip (Uji Dunnett):**
+> *"Berdasarkan Uji Dunnett pada taraf nyata $\alpha = 5\%$ terhadap kultur standar `Komposit` ($18,70\text{ mg}$), hanya strain `3DOK1` ($+10,10\text{ mg}$; $p < 0,001$) dan `3DOK5` ($+5,30\text{ mg}$; $p = 0,0024$) yang mampu meningkatkan kadar nitrogen tanaman Red Clover secara nyata melampaui kontrol."*
+</div>
+
+---
+
+# Analisis 2.5: Uji Terencana — Metode Kontras Ortogonal (Ulangan Sama & Tidak Sama)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Memecah Habis JK Perlakuan dengan Kontras Ortogonal:**
+
+Apabila perlakuan kualitatif memiliki **pengelompokan logis yang sudah direncanakan sejak proposal penelitian (*a priori*)**, kita tidak perlu membandingkan semua pasangan secara membabi-buta. **Kontras** adalah kombinasi linier untuk membandingkan dua kelompok perlakuan (misalnya *Kelompok Pupuk Organik vs Pupuk Anorganik*, atau *Pakan Lokal vs Pakan Impor*).
+
+Dua kontras disebut **saling ortogonal (bebas informasi)** apabila koefisien pengalinya tegak lurus. Keistimewaan utamanya: jika kita menyusun $(t - 1)$ buah kontras yang saling ortogonal, maka **Jumlah Kuadrat Perlakuan ($\text{JKP}$) berderajat bebas $(t - 1)$ akan terpecah habis tanpa sisa** menjadi $(t - 1)$ komponen Jumlah Kuadrat Kontras yang masing-masing berderajat bebas $1$:
+$$\text{JK}_{\text{Perlakuan}} = \text{JK}(C_1) + \text{JK}(C_2) + \dots + \text{JK}(C_{t-1})$$
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: *Feed Supplement* Ayam Pedaging:**
+
+Gunakan **Kontras Ortogonal** ketika perlakuan bersifat **kualitatif terstruktur**. Studi kasus: Percobaan RAL menguji pengaruh *feed supplement* dari **6 pabrik berbeda** terhadap bobot akhir ayam pedaging (kg) dengan $r = 4$ ulangan (`data/03_ayam_kontras_ral.csv`):
+* **Pabrik `A` dan `B`**: Produk Dalam Negeri (**Lokal**)
+* **Pabrik `C` dan `D`**: Produk Impor dari **Eropa**
+* **Pabrik `E` dan `F`**: Produk Impor dari **Amerika Serikat (AS)**
+
+Lima pertanyaan riset terencana ($\text{db} = 6 - 1 = 5$) yang ingin dijawab adalah:
+1. **$C_1$**: Apakah suplemen **Lokal (`A, B`)** berbeda dengan **Impor (`C, D, E, F`)**?
+2. **$C_2$**: Di antara produk impor, apakah **Impor Eropa (`C, D`)** berbeda dengan **Impor AS (`E, F`)**?
+3. **$C_3$**: Di dalam grup lokal, apakah **Pabrik `A`** berbeda dengan **Pabrik `B`**?
+4. **$C_4$**: Di dalam grup Eropa, apakah **Pabrik `C`** berbeda dengan **Pabrik `D`**?
+5. **$C_5$**: Di dalam grup AS, apakah **Pabrik `E`** berbeda dengan **Pabrik `F`**?
+
+Selain kasus **Ulangan Sama ($r = 4$)**, kita juga mempraktikkan cara menyusun koefisien kontras ortogonal pada **Ulangan Tidak Sama ($r_i$ berbeda)** jika terdapat satuan percobaan yang hilang!
+</div>
+
+## Model Rumus Kontras Ortogonal & Hipotesis
+
+### 1. Kasus Ulangan Sama ($r_1 = r_2 = \dots = r_t = r$)
+
+Suatu fungsi linier $L_m = \sum_{i=1}^t c_{mi} \bar{Y}_{i\cdot}$ disebut kontras dan dua kontras $(L_1, L_2)$ saling ortogonal jika memenuhi:
+
+$$\text{Syarat Kontras: } \sum_{i=1}^t c_{mi} = 0, \qquad \text{Syarat Ortogonal: } \sum_{i=1}^t c_{1i} c_{2i} = 0$$
+
+Jumlah Kuadrat dan statistik uji $F$ untuk kontras ke-$m$ ($\text{db} = 1$):
+
+$$\text{JK}(C_m) = \frac{r \left(\sum_{i=1}^t c_{mi} \bar{Y}_{i\cdot}\right)^2}{\sum_{i=1}^t c_{mi}^2} = \frac{\left(\sum_{i=1}^t c_{mi} Y_{i\cdot}\right)^2}{r \sum_{i=1}^t c_{mi}^2}, \qquad F_{\text{hitung}(C_m)} = \frac{\text{JK}(C_m) / 1}{\text{KTG}} \sim F_{(\alpha;\; 1,\; \text{db}_g)}$$
+
+### 2. Kasus Ulangan Tidak Sama ($r_i$ berbeda antar-perlakuan)
+
+Apabila ulangan perlakuan ke-$i$ adalah $r_i$ dan kontras dinyatakan dalam total perlakuan $L_m = \sum_{i=1}^t k_{mi} Y_{i\cdot} = \sum_{i=1}^t (r_i k_{mi}) \bar{Y}_{i\cdot}$, maka syarat kontras dan keortogonalan berbobot ulangan yang wajib dipenuhi oleh matriks kolom `contrasts()` di R adalah:
+
+$$\text{Syarat Kontras: } \sum_{i=1}^t r_i k_{mi} = 0, \qquad \text{Syarat Ortogonal Berbobot: } \sum_{i=1}^t r_i k_{1i} k_{2i} = 0, \qquad \text{JK}(C_m) = \frac{\left(\sum_{i=1}^t k_{mi} Y_{i\cdot}\right)^2}{\sum_{i=1}^t r_i k_{mi}^2}$$
+
+*(Tips praktis membandingkan Grup 1 berulangan total $R_1$ melawan Grup 2 berulangan total $R_2$: beri bobot $+R_2$ pada setiap perlakuan di Grup 1 dan $-R_1$ pada setiap perlakuan di Grup 2, maka otomatis $\sum r_i k_i = R_1(+R_2) + R_2(-R_1) = 0$!)*
+
+**Pasangan Hipotesis untuk Kontras ke-$m$ ($m = 1, \dots, 5$):**
+
+* $H_0 : \sum_{i=1}^t c_{mi}\mu_i = 0$ (contoh untuk $C_1$: $\frac{\mu_A + \mu_B}{2} = \frac{\mu_C + \mu_D + \mu_E + \mu_F}{4}$, rata-rata suplemen Lokal sama dengan Impor).
+* $H_1 : \sum_{i=1}^t c_{mi}\mu_i \neq 0$ (terdapat perbedaan nyata pada kontras ke-$m$).
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r kontras-ortogonal}
+# Membaca dataset Feed Supplement Ayam (6 Pabrik x 4 Ulangan)
+df_ayam <- read.csv("../data/03_ayam_kontras_ral.csv")
+df_ayam$Pabrik <- factor(df_ayam$Pabrik, levels = c("A", "B", "C", "D", "E", "F"))
+
+# Menampilkan rata-rata bobot akhir ayam per pabrik
+aggregate(Bobot_Akhir ~ Pabrik, data = df_ayam, mean)
+
+# ==============================================================================
+# BAGIAN A: KONTRAS ORTOGONAL ULANGAN SAMA (r = 4)
+# ==============================================================================
+mat_kontras <- cbind(
+  "Lokal vs Impor" = c( 2,  2, -1, -1, -1, -1),
+  "Eropa vs AS"    = c( 0,  0,  1,  1, -1, -1),
+  "Pabrik A vs B"  = c( 1, -1,  0,  0,  0,  0),
+  "Pabrik C vs D"  = c( 0,  0,  1, -1,  0,  0),
+  "Pabrik E vs F"  = c( 0,  0,  0,  0,  1, -1)
+)
+
+# Verifikasi syarat jumlah koefisien = 0 dan matriks t(C) %*% C berbentuk diagonal
+colSums(mat_kontras)
+t(mat_kontras) %*% mat_kontras
+
+# Memasang kontras ke faktor Pabrik dan memecah JK Perlakuan dengan argumen 'split'
+contrasts(df_ayam$Pabrik) <- mat_kontras
+model_ayam <- aov(Bobot_Akhir ~ Pabrik, data = df_ayam)
+
+summary.aov(model_ayam, split = list(Pabrik = list(
+  "C1: Lokal (A,B) vs Impor (C,D,E,F)" = 1,
+  "C2: Impor Eropa (C,D) vs AS (E,F)"  = 2,
+  "C3: Lokal Pabrik A vs Pabrik B"     = 3,
+  "C4: Eropa Pabrik C vs Pabrik D"     = 4,
+  "C5: AS Pabrik E vs Pabrik F"        = 5
+)))
+
+# ==============================================================================
+# BAGIAN B: KONTRAS ORTOGONAL ULANGAN TIDAK SAMA (r_i BERBEDA)
+# ==============================================================================
+# Simulasi: 1 sampel hilang di Pabrik A (baris 1) & 1 sampel hilang di Pabrik D (baris 13)
+df_ayam_un <- df_ayam[-c(1, 13), ]
+df_ayam_un$Pabrik <- factor(df_ayam_un$Pabrik, levels = c("A", "B", "C", "D", "E", "F"))
+r_vec <- as.numeric(table(df_ayam_un$Pabrik)) # Ulangan kini: A=3, B=4, C=4, D=3, E=4, F=4
+names(r_vec) <- levels(df_ayam_un$Pabrik)
+print(r_vec)
+
+# Menyusun koefisien berbobot k_i sesuai jumlah ulangan grup lawan:
+# C1: Lokal (r_A+r_B = 7) vs Impor (r_C+r_D+r_E+r_F = 15) -> (+15, +15, -7, -7, -7, -7)
+# C2: Eropa (r_C+r_D = 7) vs AS (r_E+r_F = 8)             -> (  0,   0, +8, +8, -7, -7)
+# C3: A (r_A = 3) vs B (r_B = 4)                          -> ( +4,  -3,  0,  0,  0,  0)
+# C4: C (r_C = 4) vs D (r_D = 3)                          -> (  0,   0, +3, -4,  0,  0)
+# C5: E (r_E = 4) vs F (r_F = 4)                          -> (  0,   0,  0,  0, +1, -1)
+mat_kontras_un <- cbind(
+  C1 = c(15, 15, -7, -7, -7, -7),
+  C2 = c( 0,  0,  8,  8, -7, -7),
+  C3 = c( 4, -3,  0,  0,  0,  0),
+  C4 = c( 0,  0,  3, -4,  0,  0),
+  C5 = c( 0,  0,  0,  0,  1, -1)
+)
+
+# Verifikasi syarat sum(r_i * k_i) = 0 dan matriks t(K) %*% diag(r) %*% K diagonal murni!
+colSums(r_vec * mat_kontras_un)
+t(mat_kontras_un) %*% diag(r_vec) %*% mat_kontras_un
+
+# Memecah JK Perlakuan pada data tak seimbang tanpa kebocoran jumlah kuadrat sedikit pun
+contrasts(df_ayam_un$Pabrik) <- mat_kontras_un
+model_ayam_un <- aov(Bobot_Akhir ~ Pabrik, data = df_ayam_un)
+summary.aov(model_ayam_un, split = list(Pabrik = list(
+  "C1: Lokal vs Impor (Tak Seimbang)" = 1,
+  "C2: Eropa vs AS (Tak Seimbang)"    = 2,
+  "C3: Pabrik A vs B (r=3 vs r=4)"    = 3,
+  "C4: Pabrik C vs D (r=4 vs r=3)"    = 4,
+  "C5: Pabrik E vs F (r=4 vs r=4)"    = 5
+)))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Dekomposisi Kontras Ortogonal:**
+
+1. **Bukti Partisi Sempurna Jumlah Kuadrat (`Sum Sq`)**:
+   * Pada kasus **Ulangan Sama**, `Sum Sq` total faktor `Pabrik` adalah **`17.55`**. Perhatikan penjumlahan kelima komponen kontras di bawahnya:
+     $$15,413 + 1,440 + 0,500 + 0,180 + 0,020 = 17,553 \equiv \text{JK}_{\text{Pabrik}}!$$
+   * Bahkan menariknya, kontras **`C1 (Lokal vs Impor)` sendirian menyumbang $15,413 / 17,553 = 87,8\%$** dari seluruh keragaman antar-pabrik!
+   * Pada kasus **Ulangan Tidak Sama**, berkat pembobotan $r_i$ yang tepat, kelima komponen kontras juga terpecah sempurna ($12,896 + 1,189 + 0,230 + 0,322 + 0,020 = 14,657 \approx 14,658 = \text{JK}_{\text{Pabrik}}$).
+2. **Evaluasi Signifikansi Tiap Pertanyaan Riset (Ulangan Sama)**:
+   * **`C1` (Lokal vs Impor)**: `F = 177.846`, `Pr(>F) = 9.06e-11 ***` $\rightarrow$ **Sangat nyata!** Suplemen impor ($6,95\text{ kg}$) menghasilkan bobot ayam jauh lebih tinggi daripada suplemen lokal ($5,25\text{ kg}$).
+   * **`C2` (Impor Eropa vs Impor AS)**: `F = 16.615`, `Pr(>F) = 0.000709 ***` $\rightarrow$ **Sangat nyata!** Produk impor AS ($7,25\text{ kg}$) lebih unggul dibandingkan impor Eropa ($6,65\text{ kg}$).
+   * **`C3` (Lokal A vs Lokal B)**: `F = 5.769`, `Pr(>F) = 0.027319 *` $\rightarrow$ **Nyata pada $\alpha = 5\%$** (`B = 5.50 kg` lebih tinggi dari `A = 5.00 kg`).
+   * **`C4` (Eropa C vs D)** & **`C5` (AS E vs F)**: `Pr(>F) = 0.1667` dan `0.6367` (`> 0.05`, tidak nyata) $\rightarrow$ Merek pabrik dari wilayah impor yang sama memiliki kualitas yang setara.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Penguraian kontras ortogonal menunjukkan bahwa perbedaan bobot akhir ayam pedaging terutama disebabkan oleh keunggulan feed supplement impor dibandingkan produk lokal ($F = 177,85$; $p = 9,06 \times 10^{-11}$) serta keunggulan produk impor Amerika Serikat atas Eropa ($F = 16,62$; $p = 0,0007$). Di antara sesama pabrik lokal, Pabrik B unggul nyata atas Pabrik A ($p = 0,0273$), sedangkan antar-pabrik di dalam kawasan Eropa ($p = 0,1667$) maupun di dalam kawasan AS ($p = 0,6367$) tidak menunjukkan perbedaan nyata."*
+</div>
+
+---
+
+# Analisis 2.6: Uji Terencana — Metode Polinomial Ortogonal
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Mengapa Dosis/Jarak Tanam Tidak Tepat Diuji dengan Huruf BNT/Duncan?**
+
+Apabila taraf perlakuan berupa **angka kuantitatif** (seperti dosis pupuk $0, 50, 100, 150\text{ kg/ha}$ atau jarak tanam $18, 24, 30, 36, 42\text{ inci}$), menggunakan uji huruf BNT/Duncan membuat kita kehilangan informasi terpenting, yakni **bentuk pola kurva respons** dan kemampuan menduga nilai tengah di antara taraf yang diuji (misal pada jarak $27\text{ inci}$).
+
+**Metode Polinomial Ortogonal** menguraikan Jumlah Kuadrat Perlakuan berderajat bebas $(t - 1)$ menjadi komponen-komponen derajat kurva yang saling bebas:
+1. **Linier** ($\text{db} = 1$): Apakah respon terus naik atau terus turun membentuk garis lurus?
+2. **Kuadratik** ($\text{db} = 1$): Apakah respon melengkung membentuk parabola (memiliki titik puncak optimum/minimum)?
+3. **Kubik** ($\text{db} = 1$): Apakah respon membentuk gelombang huruf S (dua titik belok)?
+4. **Kuartik**, dst. hingga derajat ke-$(t - 1)$.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Jarak Tanam Kedelai *Ottawa Mandarin*:**
+
+* **Kapan Digunakan?** Gunakan **Polinomial Ortogonal** setiap kali faktor perlakuan bersifat **kuantitatif**. Fungsi `contr.poly(t)` di R secara otomatis membangkitkan koefisien polinomial ortogonal untuk $t$ taraf yang **berjarak sama (*equally spaced*)**.
+* **Skenario Penelitian**: Suatu percobaan lapangan dalam **Rancangan Acak Kelompok (6 Kelompok)** meneliti pengaruh **5 taraf jarak tanam antar-barisan** yang berjarak sama $d = 6\text{ inci}$ (yaitu **`18`, `24`, `30`, `36`, dan `42` inci**) terhadap **hasil biji kedelai varietas *Ottawa Mandarin* (bushels/acre)**. Dataset tersimpan pada `data/04_kedelai_polinomial_rak.csv`.
+</div>
+
+## Model Rumus Polinomial Ortogonal & Hipotesis
+
+Untuk $t = 5$ taraf kuantitatif $X_1, X_2, \dots, X_5$ yang berjarak sama, model polinomial ortogonal menduga respon rata-rata sebagai kombinasi polinomial ortogonal $P_m(X)$:
+
+$$\mu(X_i) = \alpha_0 + \alpha_1 P_1(X_i) + \alpha_2 P_2(X_i) + \alpha_3 P_3(X_i) + \alpha_4 P_4(X_i)$$
+
+dengan koefisien bilangan bulat baku untuk $t = 5$:
+
+* **Linier ($P_1$)**: $(-2,\; -1,\; 0,\; +1,\; +2)$
+* **Kuadratik ($P_2$)**: $(+2,\; -1,\; -2,\; -1,\; +2)$
+* **Kubik ($P_3$)**: $(-1,\; +2,\; 0,\; -2,\; +1)$
+* **Kuartik ($P_4$)**: $(+1,\; -4,\; +6,\; -4,\; +1)$
+
+*(Catatan: `contr.poly(5)` membagi tiap vektor di atas dengan akar jumlah kuadratnya $\sqrt{\sum P_{mi}^2}$ sehingga ternormalisasi berpanjang satuan, namun menghasilkan nilai `Sum Sq` dan `F value` yang **100% identik**!)*
+
+**Pasangan Hipotesis Berjenjang:**
+
+* **Tren Linier**: $H_0 : \alpha_1 = 0$ vs $H_1 : \alpha_1 \neq 0$
+* **Tren Kuadratik**: $H_0 : \alpha_2 = 0$ vs $H_1 : \alpha_2 \neq 0$
+* **Tren Kubik**: $H_0 : \alpha_3 = 0$ vs $H_1 : \alpha_3 \neq 0$
+* **Tren Kuartik**: $H_0 : \alpha_4 = 0$ vs $H_1 : \alpha_4 \neq 0$
+
+Model kurva yang dipilih adalah **polinomial berderajat tertinggi yang masih nyata secara statistik** (dan komponen simpangan derajat di atasnya tidak nyata).
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r polinomial-ortogonal, fig.cap="Kurva respons tren polinomial hasil kedelai Ottawa Mandarin terhadap peningkatan jarak tanam barisan (18 hingga 42 inci)."}
+# Langkah 1: Membaca data dan menyiapkan peubah Jarak sebagai factor (untuk ANOVA) & numeric (untuk kurva)
+df_kedelai <- read.csv("../data/04_kedelai_polinomial_rak.csv")
+df_kedelai$Jarak_Faktor <- factor(df_kedelai$Jarak_Inci)
+df_kedelai$Kelompok     <- factor(df_kedelai$Kelompok)
+
+# Rata-rata hasil kedelai pada masing-masing jarak tanam
+rataan_jarak <- aggregate(Hasil ~ Jarak_Inci, data = df_kedelai, mean)
+print(rataan_jarak)
+
+# Langkah 2: Memasang matriks koefisien Polinomial Ortogonal 5 taraf berjarak sama
+round(contr.poly(5), 4)
+contrasts(df_kedelai$Jarak_Faktor) <- contr.poly(5)
+
+# Langkah 3: Menjalankan ANOVA RAK dan memecah JK Jarak_Faktor menjadi 4 derajat polinomial
+model_poly <- aov(Hasil ~ Kelompok + Jarak_Faktor, data = df_kedelai)
+summary.aov(model_poly, split = list(Jarak_Faktor = list(
+  "Linier"    = 1,
+  "Kuadratik" = 2,
+  "Kubik"     = 3,
+  "Kuartik"   = 4
+)))
+
+# Langkah 4: Menduga persamaan garis respons linier Y_hat = b0 + b1 * Jarak
+mod_tren_linier <- lm(Hasil ~ Jarak_Inci, data = df_kedelai)
+coef(mod_tren_linier)
+
+# Langkah 5: Visualisasi titik rata-rata aktual bersama garis tren Linier & kurva Kuadratik
+jarak_halus <- seq(18, 42, length.out = 100)
+plot(rataan_jarak$Jarak_Inci, rataan_jarak$Hasil,
+     pch = 19, col = "#2c3e50", cex = 1.5, ylim = c(27, 36.5),
+     xlab = "Jarak Tanam Antar-Barisan Kedelai (Inci)",
+     ylab = "Rata-rata Hasil Biji (bushels/acre)",
+     main = "Kurva Tren Polinomial Hasil Kedelai Ottawa Mandarin vs Jarak Tanam")
+
+lines(jarak_halus,
+      predict(mod_tren_linier, newdata = data.frame(Jarak_Inci = jarak_halus)),
+      col = "#2980b9", lwd = 2.5)
+lines(jarak_halus,
+      predict(lm(Hasil ~ poly(Jarak_Inci, 2), data = df_kedelai),
+              newdata = data.frame(Jarak_Inci = jarak_halus)),
+      col = "#e74c3c", lwd = 2, lty = 2)
+legend("topright",
+       legend = c("Rata-rata Aktual Perlakuan",
+                  "Tren Linier: Y = 38.98 - 0.268 X (p < 0.001 ***)",
+                  "Tren Kuadratik (p = 0.0757, tidak nyata pada 5%)"),
+       pch = c(19, NA, NA), lty = c(NA, 1, 2), lwd = c(NA, 2.5, 2),
+       col = c("#2c3e50", "#2980b9", "#e74c3c"), bty = "n")
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output Polinomial Ortogonal:**
+
+1. **Pengaruh Umum Jarak Tanam (`Jarak_Faktor`)**:
+   * Berpengaruh sangat nyata dengan `Sum Sq = 171.39`, `F value = 13.494`, dan `Pr(>F) = 1.73e-05 ***`.
+2. **Dekomposisi Derajat Polinomial**:
+   * **Komponen `Linier`**: `Sum Sq = 155.53` (`F = 48.979`, **`Pr(>F) = 8.62e-07 ***`**) $\rightarrow$ **Sangat nyata!** Komponen linier sendirian menjelaskan $155,53 / 171,39 = \mathbf{90,75\%}$ dari seluruh keragaman pengaruh jarak tanam!
+   * **Komponen `Kuadratik`**: `Sum Sq = 11.15` (`F = 3.511`, `Pr(>F) = 0.0757 .`) $\rightarrow$ **Tidak nyata pada taraf $\alpha = 5\%$** (hanya mendekati nyata pada $\alpha = 10\%$).
+   * **Komponen `Kubik` & `Kuartik`**: `Pr(>F) = 0.2377` dan `0.9526` $\rightarrow$ **Sama sekali tidak nyata**.
+   * Cek total partisi JK: $155,53 + 11,15 + 4,70 + 0,01 = 171,39 = \text{JK}_{\text{Jarak}}$!
+3. **Interpretasi Persamaan Respons Linier ($\hat{Y} = 38,98 - 0,268 X$)**:
+   * Koefisien kemiringan $b_1 = -0,2683$ bermakna bahwa pada rentang jarak tanam $18$ hingga $42\text{ inci}$, **setiap pelebaran jarak tanam sebesar $1\text{ inci}$ menurunkan hasil kedelai rata-rata sebesar $0,268\text{ bushels/acre}$** (atau turun sekitar $1,61\text{ bushels/acre}$ setiap pelebaran $6\text{ inci}$), sehingga jarak tanam paling rapat ($18\text{ inci}$) menghasilkan panen tertinggi ($35,15\text{ bushels/acre}$).
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Analisis polinomial ortogonal menunjukkan bahwa jarak tanam antar-barisan berpengaruh sangat nyata terhadap hasil biji kedelai varietas Ottawa Mandarin ($F = 13,49$; $p = 1,73 \times 10^{-5}$), dengan pola respons yang mengikuti **tren linier menurun sangat nyata** ($F_{\text{linier}} = 48,98$; $p = 8,62 \times 10^{-7}$; menyumbang $90,75\%$ keragaman perlakuan), sedangkan komponen kuadratik ($p = 0,0757$), kubik ($p = 0,2377$), dan kuartik ($p = 0,9526$) tidak nyata pada taraf $\alpha = 5\%$. Hubungan respons dinyatakan melalui persamaan $\hat{Y} = 38,98 - 0,268 X$, di mana jarak tanam tersempit $18\text{ inci}$ memberikan hasil tertinggi sebesar $35,15\text{ bushels/acre}$."*
+</div>

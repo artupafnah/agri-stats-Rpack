@@ -1,0 +1,375 @@
+---
+title: "Modul 01: Rancangan Percobaan Satu Faktor — RAL dan RAK"
+output:
+  rmdformats::robobook:
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: show
+    toc_depth: 3
+    use_bookdown: true
+    css: "../assets/style_robobook.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 5,
+  comment = "#>"
+)
+```
+
+# Pengantar Perancangan Percobaan Satu Faktor
+
+Dalam penelitian pertanian, biologi, peternakan, dan perikanan, sebuah **percobaan ilmiah (*experiment*)** yang sah wajib memenuhi **tiga prinsip dasar Fisher**:
+
+1. **Ulangan (*Replication*)**: Perlakuan diaplikasikan pada lebih dari satu satuan percobaan agar kita dapat menduga ragam **galat percobaan (*experimental error*)** dan memperkecil simpangan baku nilai tengah perlakuan ($\sigma_{\bar{Y}} = \sqrt{\sigma^2 / r}$).
+2. **Pengacakan (*Randomization*)**: Penempatan perlakuan ke satuan percobaan dilakukan melalui mekanisme peluang agar galat percobaan saling bebas dan penduga perbedaan antar-perlakuan tidak berbias (*unbiased*).
+3. **Pengendalian Lingkungan Lokal (*Local Control / Blocking*)**: Pengelompokan satuan-satuan percobaan yang seragam ke dalam satu blok apabila kondisi lingkungan tidak homogen, sehingga keragaman sistematis lingkungan dapat dipisahkan dari galat percobaan.
+
+Modul ini membahas **Rancangan Percobaan Satu Faktor** secara menyeluruh mulai dari teknik pengacakan denah lapangan hingga pelaksanaan Analisis Ragam (*Analysis of Variance* / ANOVA) pada **Rancangan Acak Lengkap (RAL / CRD)** dan **Rancangan Acak Kelompok Lengkap (RAK / RCBD)**.
+
+| Kriteria Pemilihan | Rancangan Acak Lengkap (RAL / CRD) | Rancangan Acak Kelompok (RAK / RCBD) |
+| :--- | :--- | :--- |
+| **Kondisi Satuan Percobaan** | Sangat **homogen** (seragam di seluruh unit) | **Heterogen sistematis** pada satu arah gradasi |
+| **Lokasi Khas** | Laboratorium, inkubator, kultur jaringan, rumah kaca terkontrol | Lahan sawah/kebun berlereng, kandang berbeda lokasi, bobot awal ternak beragam |
+| **Prosedur Pengacakan** | Bebas penuh di seluruh $t \times r$ satuan percobaan | Dibatasi **terpisah di dalam masing-masing kelompok/blok** |
+| **Derajat Bebas Galat ($\text{db}_g$)** | $t(r - 1)$ *(lebih besar pada jumlah petak sama)* | $(t - 1)(r - 1)$ *(berkurang sebesar $r - 1$ untuk blok)* |
+
+---
+
+# Analisis 1.1: Pengacakan Layout RAL dan RAK
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Mengapa Pengacakan Tidak Boleh Dilakukan "Suka-Suka"?**
+
+Jika peneliti menempatkan perlakuan secara subjektif (misalnya semua petak pupuk `A` diletakkan di pinggir saluran irigasi dan pupuk `D` di bagian kering), maka pengaruh pupuk akan **terbaur (*confounded*)** dengan perbedaan kesuburan air.
+
+* Pada **RAL (*Completely Randomized Design*)**, pengacakan dilakukan sekaligus terhadap seluruh $N = t \times r$ satuan percobaan tanpa batasan blok.
+* Pada **RAK (*Randomized Complete Block Design*)**, lahan dibagi terlebih dahulu menjadi $r$ **kelompok (blok)** yang tegak lurus arah gradasi kesuburan, sehingga petak-petak **di dalam blok yang sama bersifat sehomogen mungkin**, sedangkan antar-blok dibuat semaksimal mungkin berbeda. Selanjutnya, ke-$t$ perlakuan diacak secara independen di dalam setiap blok.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Pengacakan Denah Lapangan:**
+
+Seorang peneliti agronomi akan menguji **4 perlakuan pupuk** (`A`, `B`, `C`, dan `D`) masing-masing dengan **3 ulangan** (total $4 \times 3 = 12$ petak percobaan).
+* **Skenario 1 (RAL)**: Percobaan dilakukan dalam 12 pot tanah yang telah diayak dan dicampur homogen di rumah kaca.
+* **Skenario 2 (RAK)**: Percobaan dilakukan di lahan miring yang memiliki **3 tingkatan teras kesuburan** (Blok 1 = atas, Blok 2 = tengah, Blok 3 = bawah), sehingga setiap teras wajib memuat keempat perlakuan `A, B, C, D` tepat satu kali.
+</div>
+
+## Model Peluang Pengacakan & Kombinatorika
+
+Banyaknya kemungkinan tata letak pengacakan yang berpeluang sama untuk terpilih adalah:
+
+$$\text{Banyak Denah RAL} = \frac{(t \cdot r)!}{(r!)^t}, \qquad \text{Banyak Denah RAK} = (t!)^r$$
+
+Untuk $t = 4$ perlakuan dan $r = 3$ ulangan/kelompok:
+
+* Pada **RAL**: terdapat $\frac{12!}{(3!)^4} = \frac{479.001.600}{1.296} = 369.600$ kemungkinan tata letak, di mana bisa saja secara kebetulan 2 atau 3 ulangan perlakuan `A` mengumpul di satu sisi.
+* Pada **RAK**: terdapat $(4!)^3 = 24^3 = 13.824$ kemungkinan tata letak yang **menjamin** setiap perlakuan muncul tepat satu kali di setiap blok.
+
+*Catatan: Pengacakan adalah tahap persiapan sebelum pengumpulan data, sehingga belum menguji hipotesis $H_0$, melainkan menjamin terpenuhinya asumsi kebebasan sisaan $\varepsilon_{ij} \overset{\text{iid}}{\sim} N(0, \sigma^2)$.*
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r pengacakan-ral-rak}
+# Memuat paket agricolae untuk perancangan percobaan pertanian
+library(agricolae)
+
+# Mendefinisikan vektor 4 taraf perlakuan pupuk
+perlakuan <- c("A", "B", "C", "D")
+
+# 1. Pengacakan RAL (4 perlakuan x 3 ulangan = 12 satuan percobaan)
+#    Argumen seed = 512 menjamin hasil pengacakan dapat direproduksi persis sama
+desain_ral <- design.crd(trt = perlakuan, r = 3, seed = 512, serie = 2)
+
+# Menampilkan buku lapangan (fieldbook) urutan petak RAL
+desain_ral$book
+
+# Menyusun tampilan visual denah 12 pot RAL dalam matriks 3 x 4
+denah_ral <- matrix(
+  paste0("Pot-", desain_ral$book$plots, " (", desain_ral$book$perlakuan, ")"),
+  nrow = 3, ncol = 4, byrow = TRUE
+)
+print(denah_ral)
+
+# 2. Pengacakan RAK / RCBD (4 perlakuan x 3 kelompok = 12 petak sawah)
+desain_rak <- design.rcbd(trt = perlakuan, r = 3, seed = 512, serie = 2)
+
+# Menampilkan denah lapangan per blok (baris = blok, kolom = petak di dalam blok)
+print(desain_rak$sketch)
+
+# Menampilkan buku lapangan RAK lengkap dengan nomor petak per blok (101..104, 201..204, 301..304)
+desain_rak$book
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Buku Lapangan (`book`) dan Denah (`sketch`):**
+
+1. **Pada Output RAL (`desain_ral$book`)**:
+   * Kolom `plots` (`101` s.d. `112`) menunjukkan nomor urut pot, kolom `r` menunjukkan ulangan ke-berapa bagi perlakuan tersebut, dan kolom `perlakuan` menunjukkan huruf pupuk yang ditempatkan.
+   * Perhatikan pada `denah_ral`: pada baris pertama saja muncul dua perlakuan `D` dan dua perlakuan `A`, sedangkan perlakuan `B` dan `C` sama sekali belum muncul di baris pertama. Hal ini **sah pada RAL** hanya jika seluruh ruang rumah kaca benar-benar seragam.
+2. **Pada Output RAK (`desain_rak$sketch` & `desain_rak$book`)**:
+   * Setiap baris pada `sketch` mewakili satu **Blok/Kelompok** (`[,1]` s.d. `[,4]` adalah 4 petak di dalam blok tersebut).
+   * Nomor petak menggunakan sistem penomoran lapangan standar (`serie = 2`): **`101–104`** untuk Kelompok 1, **`201–204`** untuk Kelompok 2, dan **`301–304`** untuk Kelompok 3.
+   * Terlihat setiap baris blok pasti memuat lengkap keempat perlakuan `{A, B, C, D}` dengan urutan acak yang berbeda-beda antar-blok, sehingga gradasi kesuburan antar-teras tidak akan mencemari perbandingan antar-pupuk!
+</div>
+
+---
+
+# Analisis 1.2: ANOVA Satu Arah — Rancangan Acak Lengkap (RAL / CRD)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Bagaimana ANOVA Satu Arah Bekerja?**
+
+Banyak pemula bertanya: *"Mengapa untuk membandingkan beberapa nilai rata-rata ($\mu_1, \mu_2, \dots, \mu_t$), metode yang dipakai justru bernama Analisis **Ragam** (ANOVA)?"*
+
+Intuisinya sangat sederhana: ANOVA membandingkan **keragaman rata-rata antar-perlakuan (*Kuadrat Tengah Perlakuan* / KTP)** terhadap **keragaman alami individu di dalam perlakuan yang sama (*Kuadrat Tengah Galat* / KTG)**.
+* Jika rasio $F_{\text{hitung}} = \frac{\text{KTP}}{\text{KTG}} \approx 1$, berarti perbedaan antar-perlakuan hanyalah fluktuasi acak biasa.
+* Jika rasio $F_{\text{hitung}} \gg 1$ (jauh lebih besar dari 1), berarti perlakuan benar-benar menciptakan perbedaan respon yang nyata melampaui keragaman alami!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus RAL — Inokulasi Bakteri *Rhizobium* pada *Red Clover*:**
+
+Gunakan **ANOVA Satu Arah (RAL)** apabila:
+1. Hanya ada **satu faktor perlakuan** yang diteliti ($t \ge 2$ taraf).
+2. Seluruh satuan percobaan (media tanam, cahaya, suhu, kelembaban) berada dalam kondisi **sangat homogen** sehingga tidak diperlukan pengelompokan (blok).
+
+**Skenario Penelitian**: Suatu percobaan pot di rumah kaca dilakukan untuk menguji pengaruh inokulasi **6 kultur strain bakteri pengikat nitrogen *Rhizobium trifolii*** (yaitu `3DOK1`, `3DOK5`, `3DOK4`, `3DOK7`, `3DOK13`, dan campuran `Komposit`) terhadap **kadar nitrogen (mg)** tanaman *Red Clover* (*Trifolium pratense*), di mana setiap perlakuan diulang sebanyak **5 pot** (total $N = 6 \times 5 = 30$ satuan percobaan). Dataset tersimpan pada `data/02_red_clover_ral.csv`.
+</div>
+
+## Model Linier, Rumus Dekomposisi JK, & Hipotesis
+
+Model linier aditif untuk Rancangan Acak Lengkap dengan $t$ perlakuan dan $r$ ulangan adalah:
+
+$$Y_{ij} = \mu + \tau_i + \varepsilon_{ij}; \quad i = 1, 2, \dots, t; \quad j = 1, 2, \dots, r$$
+
+Keterangan simbol:
+
+* $Y_{ij}$ : Nilai pengamatan kadar nitrogen pada perlakuan ke-$i$ ulangan ke-$j$.
+* $\mu$ : Nilai tengah umum (*grand mean*) populasi.
+* $\tau_i$ : Pengaruh aditif perlakuan strain *Rhizobium* ke-$i$ (dengan kendala $\sum_{i=1}^t \tau_i = 0$ untuk model pengaruh tetap).
+* $\varepsilon_{ij}$ : Pengaruh acak galat percobaan pada perlakuan ke-$i$ ulangan ke-$j$, dengan asumsi $\varepsilon_{ij} \overset{\text{iid}}{\sim} N(0, \sigma^2)$.
+
+Dekomposisi Jumlah Kuadrat (JK), Derajat Bebas (db), dan statistik uji $F$:
+
+$$\text{JKT} = \text{JKP} + \text{JKG}, \qquad \text{db}_{\text{total}} = (tr - 1) = (t - 1) + t(r - 1)$$
+
+$$F_{\text{hitung}} = \frac{\text{KTP}}{\text{KTG}} = \frac{\text{JKP} / (t - 1)}{\text{JKG} / [t(r - 1)]} \sim F_{(\alpha;\; t-1,\; t(r-1))}$$
+
+$$\text{Koefisien Keragaman (KK)} = \frac{\sqrt{\text{KTG}}}{\bar{Y}_{\cdot\cdot}} \times 100\%$$
+
+**Pasangan Hipotesis Statistik:**
+
+* **$H_0 : \tau_1 = \tau_2 = \dots = \tau_6 = 0$** (Keenam strain bakteri *Rhizobium* memberikan rata-rata kadar nitrogen tanaman *Red Clover* yang sama).
+* **$H_1 :$ Paling sedikit ada satu $\tau_i \neq 0$** untuk $i = 1, 2, \dots, 6$ (Minimal terdapat satu strain *Rhizobium* yang memberikan rata-rata kadar nitrogen berbeda nyata).
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r anova-ral-clover, fig.cap="Sebaran dan titik rata-rata kadar nitrogen tanaman Red Clover pada 6 strain bakteri Rhizobium (RAL)."}
+# Langkah 1: Membaca data dan menetapkan urutan faktor Perlakuan
+df_clover <- read.csv("../data/02_red_clover_ral.csv")
+df_clover$Perlakuan <- factor(
+  df_clover$Perlakuan,
+  levels = c("3DOK1", "3DOK5", "3DOK4", "3DOK7", "3DOK13", "Komposit")
+)
+
+# Langkah 2: Eksplorasi rata-rata, simpangan baku, dan jumlah ulangan tiap strain
+ringkasan_clover <- do.call(
+  data.frame,
+  aggregate(Kadar_N ~ Perlakuan, data = df_clover,
+            FUN = function(x) c(n = length(x), Mean = round(mean(x), 2), SD = round(sd(x), 2)))
+)
+print(ringkasan_clover)
+
+# Langkah 3: Menjalankan ANOVA Satu Arah (RAL) dengan fungsi aov()
+model_ral <- aov(Kadar_N ~ Perlakuan, data = df_clover)
+summary(model_ral)
+
+# Langkah 4: Menghitung KTG, Rata-rata Umum, Koefisien Keragaman (KK %), dan F-tabel
+ktg_ral  <- summary(model_ral)[[1]]["Residuals", "Mean Sq"]
+rata_ral <- mean(df_clover$Kadar_N)
+kk_ral   <- sqrt(ktg_ral) / rata_ral * 100
+
+cat(sprintf("Rata-rata Umum = %.2f mg | KTG = %.2f | KK = %.2f%%\n",
+            rata_ral, ktg_ral, kk_ral))
+cat(sprintf("Nilai kritis F_tabel(0.05; 5, 24) = %.2f | F_tabel(0.01; 5, 24) = %.2f\n",
+            qf(0.95, 5, 24), qf(0.99, 5, 24)))
+
+# Langkah 5: Visualisasi Boxplot disertai titik rata-rata perlakuan (merah)
+boxplot(Kadar_N ~ Perlakuan, data = df_clover,
+        col  = "#aed6f1", border = "#1b4f72",
+        main = "Kadar Nitrogen Tanaman Red Clover per Strain Rhizobium (RAL)",
+        xlab = "Strain Bakteri Rhizobium",
+        ylab = "Kadar Nitrogen (mg)")
+rata_strain <- tapply(df_clover$Kadar_N, df_clover$Perlakuan, mean)
+points(1:length(rata_strain), rata_strain, pch = 19, col = "#c0392b", cex = 1.3)
+legend("topright", legend = "Rata-rata Perlakuan", pch = 19, col = "#c0392b", bty = "n")
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `summary(model_ral)`:**
+
+1. **Derajat Bebas (`Df`)**: Baris `Perlakuan` memiliki `Df = 5` ($t - 1 = 6 - 1 = 5$) dan baris `Residuals` (Galat) memiliki `Df = 24` ($t(r - 1) = 6 \times 4 = 24$). Pastikan angka ini selalu cocok dengan rumus sebelum membaca kolom lainnya!
+2. **Jumlah Kuadrat (`Sum Sq`) & Kuadrat Tengah (`Mean Sq`)**:
+   * $\text{JKP} = 852,2$ dengan $\text{KTP} = 852,2 / 5 = 170,43$.
+   * $\text{JKG} = 105,4$ dengan $\text{KTG} = 105,4 / 24 = 4,39$. *(Catatan: Data pengamatan per pot pada CSV ini memiliki nilai tengah keenam strain sebesar `28,8; 24,0; 14,6; 19,9; 13,2; 18,7` mg).*
+3. **Statistik Uji (`F value`) & Peluang Nyata (`Pr(>F)`)**:
+   * Diperoleh **`F value = 38.81`** (jauh melampaui $F_{0.01(5,24)} = 3.90$) dengan **`Pr(>F) = 9.77e-11`** ($9,77 \times 10^{-11} < 0,001$, ditandai tiga bintang `***`).
+   * Karena `Pr(>F) < 0.05`, maka **Tolak $H_0$** pada taraf nyata $\alpha = 5\%$ (bahkan sangat nyata pada $\alpha = 1\%$).
+4. **Koefisien Keragaman (`KK = 10.55%`)**: Keragaman nisbi galat percobaan sebesar $10,55\%$ tergolong kecil/baik untuk percobaan biologis rumah kaca, menandakan kondisi pot terkendali dengan rapi.
+
+**Kalimat Kesimpulan Siap Kutip (Format Laporan Penelitian):**
+> *"Berdasarkan hasil analisis ragam Rancangan Acak Lengkap, pemberian berbagai strain bakteri Rhizobium berpengaruh sangat nyata terhadap kadar nitrogen tanaman Red Clover ($F_{\text{hitung}} = 38,81 > F_{0,01(5, 24)} = 3,90$; $p\text{-value} = 9,77 \times 10^{-11} < 0,01$) dengan Koefisien Keragaman sebesar $10,55\%$. Rata-rata kadar nitrogen tertinggi dicapai pada inokulasi strain `3DOK1` ($28,80\text{ mg}$) dan terendah pada strain `3DOK13` ($13,20\text{ mg}$). Untuk menentukan pasangan strain mana saja yang berbeda nyata, analisis dilanjutkan dengan uji perbandingan berganda pada Modul 02."*
+</div>
+
+---
+
+# Analisis 1.3: ANOVA Dua Arah Tanpa Interaksi — Rancangan Acak Kelompok (RAK / RCBD)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Bagaimana Pengelompokan (Blok) Mempertajam Uji $F$?**
+
+Di lahan pertanian terbuka, hampir mustahil mendapatkan 24 petak sawah yang kesuburannya identik. Apabila kita memaksakan memakai RAL di lahan yang memiliki gradasi kesuburan, perbedaan kesuburan antar-petak akan masuk seluruhnya ke dalam **Jumlah Kuadrat Galat (JKG)**, membuat nilai **KTG membengkak** sehingga perbedaan nyata antar-pupuk gagal terdeteksi!
+
+Pada **Rancangan Acak Kelompok (RAK / RCBD)**, keragaman total dipecah menjadi **tiga komponen**:
+$$\text{Keragaman Total} = \text{Keragaman Perlakuan} + \text{Keragaman Kelompok (Blok)} + \text{Keragaman Galat}$$
+Dengan "menyedot keluar" keragaman antar-kelompok ($\text{JKK}$) dari galat, nilai **KTG mengecil drastis** dan uji $F$ menjadi jauh lebih tajam/sensitif.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus RAK — Pemupukan NPK pada Padi Genotif S-969:**
+
+Gunakan **ANOVA RAK** apabila:
+1. Terdapat **satu faktor perlakuan** yang diuji, namun satuan percobaan memiliki **satu sumber keragaman lingkungan sistematis** (misalnya jarak petak sawah dari saluran irigasi primer, kemiringan lereng bukit, umur/bobot awal ternak, atau hari pengamatan berbeda).
+2. Diasumsikan **tidak ada interaksi antara Kelompok dan Perlakuan** (selisih keunggulan pupuk relatif konsisten dari satu kelompok ke kelompok lain).
+
+**Skenario Penelitian**: Suatu percobaan lapangan dilakukan untuk mengevaluasi pengaruh **6 kombinasi pupuk makro N, P, K** (`Kontrol`, `PK`, `N`, `NP`, `NK`, dan `NPK`) terhadap **hasil gabah kering (ton/ha) padi genotif S-969** yang ditanam pada **4 kelompok petak sawah** (`I`, `II`, `III`, `IV`) berdasarkan gradasi kesuburan lahan (total $6 \times 4 = 24$ petak). Dataset tersimpan pada `data/01_padi_rak_s969.csv`.
+</div>
+
+## Model Linier, Rumus Efisiensi Relatif, & Hipotesis
+
+Model linier aditif untuk Rancangan Acak Kelompok Lengkap tanpa interaksi adalah:
+
+$$Y_{ij} = \mu + \tau_i + \beta_j + \varepsilon_{ij}; \quad i = 1, 2, \dots, t; \quad j = 1, 2, \dots, r$$
+
+Keterangan simbol:
+
+* $Y_{ij}$ : Hasil gabah padi (ton/ha) pada perlakuan pupuk ke-$i$ di kelompok sawah ke-$j$.
+* $\mu$ : Nilai tengah umum populasi.
+* $\tau_i$ : Pengaruh perlakuan pupuk ke-$i$ ($\sum_{i=1}^t \tau_i = 0$).
+* $\beta_j$ : Pengaruh kelompok (blok) lahan ke-$j$ ($\sum_{j=1}^r \beta_j = 0$).
+* $\varepsilon_{ij}$ : Pengaruh acak galat percobaan pada petak perlakuan ke-$i$ kelompok ke-$j$, dengan $\varepsilon_{ij} \overset{\text{iid}}{\sim} N(0, \sigma^2)$.
+
+Dekomposisi Jumlah Kuadrat (JK) dan Statistik Uji $F$:
+
+$$\text{JKT} = \text{JKK} + \text{JKP} + \text{JKG}, \qquad (tr - 1) = (r - 1) + (t - 1) + (t - 1)(r - 1)$$
+
+$$F_{\text{hitung (Perlakuan)}} = \frac{\text{KTP}}{\text{KTG}} \sim F_{(\alpha;\; t-1,\; (t-1)(r-1))}, \qquad F_{\text{hitung (Kelompok)}} = \frac{\text{KTK}}{\text{KTG}} \sim F_{(\alpha;\; r-1,\; (t-1)(r-1))}$$
+
+Untuk mengukur seberapa besar keuntungan pengelompokan dibandingkan jika seandainya dipakai RAL tanpa blok, kita dapat menghitung **Efisiensi Relatif (ER)**:
+
+$$\widehat{\text{KTG}}_{\text{RAL}} = \frac{(r - 1)\text{KTK} + r(t - 1)\text{KTG}}{rt - 1}, \qquad \text{ER}(\%) = \frac{\widehat{\text{KTG}}_{\text{RAL}}}{\text{KTG}_{\text{RAK}}} \times 100\%$$
+
+**Pasangan Hipotesis Statistik:**
+
+1. **Hipotesis Utama (Pengaruh Perlakuan Pupuk)**:
+   * $H_0 : \tau_1 = \tau_2 = \dots = \tau_6 = 0$ (Keenam kombinasi pupuk memberikan rata-rata hasil gabah padi S-969 yang sama).
+   * $H_1 :$ Minimal ada satu $\tau_i \neq 0$ (Minimal ada satu kombinasi pupuk yang memberikan hasil gabah berbeda nyata).
+2. **Hipotesis Pengelompokan (Efektivitas Blok)**:
+   * $H_0 : \beta_1 = \beta_2 = \beta_3 = \beta_4 = 0$ (Tidak ada perbedaan hasil gabah antar-kelompok petak sawah).
+   * $H_1 :$ Minimal ada satu $\beta_j \neq 0$ (Pengelompokan lahan efektif menangkap perbedaan kesuburan antar-blok).
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r anova-rak-padi, fig.width=10, fig.height=4.8, fig.cap="Perbandingan sebaran hasil gabah Padi S-969 berdasarkan perlakuan kombinasi pupuk (kiri) dan berdasarkan kelompok sawah (kanan)."}
+# Langkah 1: Membaca data dan mengatur urutan level Perlakuan serta Kelompok
+df_padi <- read.csv("../data/01_padi_rak_s969.csv")
+df_padi$Perlakuan <- factor(
+  df_padi$Perlakuan,
+  levels = c("Kontrol", "PK", "N", "NP", "NK", "NPK")
+)
+df_padi$Kelompok <- factor(
+  df_padi$Kelompok,
+  levels = c("I", "II", "III", "IV")
+)
+
+# Langkah 2: Menampilkan tabel silang Perlakuan x Kelompok beserta nilai rata-ratanya
+tabel_dua_arah <- xtabs(Hasil_Gabah ~ Perlakuan + Kelompok, data = df_padi)
+round(addmargins(tabel_dua_arah, FUN = mean, quiet = TRUE), 2)
+
+# Langkah 3: Menjalankan ANOVA Dua Arah Tanpa Interaksi (RAK)
+#            Gunakan tanda '+' (BUKAN '*') karena pada RAK standar diasumsikan tidak ada interaksi Blok x Perlakuan
+model_rak <- aov(Hasil_Gabah ~ Kelompok + Perlakuan, data = df_padi)
+summary(model_rak)
+
+# Langkah 4: Menghitung KTG, KK (%), dan Efisiensi Relatif (ER) RAK terhadap RAL
+tabel_anova_rak <- summary(model_rak)[[1]]
+ktk_rak <- tabel_anova_rak["Kelompok", "Mean Sq"]
+ktg_rak <- tabel_anova_rak["Residuals", "Mean Sq"]
+kk_rak  <- sqrt(ktg_rak) / mean(df_padi$Hasil_Gabah) * 100
+
+r_blok <- nlevels(df_padi$Kelompok)
+t_perl <- nlevels(df_padi$Perlakuan)
+ktg_duga_ral <- ((r_blok - 1) * ktk_rak + r_blok * (t_perl - 1) * ktg_rak) / (r_blok * t_perl - 1)
+efisiensi_relatif <- (ktg_duga_ral / ktg_rak) * 100
+
+cat(sprintf("KTG = %.4f | KK = %.2f%% | Efisiensi Relatif RAK vs RAL = %.1f%%\n",
+            ktg_rak, kk_rak, efisiensi_relatif))
+
+# Langkah 5: Visualisasi berdampingan efek Perlakuan dan efek Kelompok
+par(mfrow = c(1, 2))
+boxplot(Hasil_Gabah ~ Perlakuan, data = df_padi,
+        col  = "#a9dfbf", border = "#1e8449",
+        main = "Hasil Gabah per Perlakuan Pupuk",
+        xlab = "Kombinasi Pupuk NPK", ylab = "Hasil Gabah (ton/ha)")
+
+boxplot(Hasil_Gabah ~ Kelompok, data = df_padi,
+        col  = "#fad7a0", border = "#b9770e",
+        main = "Keragaman Antar-Kelompok Sawah",
+        xlab = "Kelompok (Blok)", ylab = "Hasil Gabah (ton/ha)")
+par(mfrow = c(1, 1))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `summary(model_rak)`:**
+
+1. **Periksa Derajat Bebas (`Df`)**:
+   * `Kelompok` memiliki `Df = 3` ($r - 1 = 4 - 1 = 3$).
+   * `Perlakuan` memiliki `Df = 5` ($t - 1 = 6 - 1 = 5$).
+   * `Residuals` (Galat) memiliki `Df = 15` ($(t - 1)(r - 1) = 5 \times 3 = 15$). Jumlah total derajat bebas $= 3 + 5 + 15 = 23 = 24 - 1$ (cocok!).
+2. **Evaluasi Pengaruh Perlakuan (`Perlakuan`)**:
+   * Diperoleh **`F value = 515.7`** dengan **`Pr(>F) = 3.18e-16 ***`** ($< 0,001$).
+   * Karena `Pr(>F) < 0.05`, maka **Tolak $H_0$ perlakuan**: kombinasi pupuk NPK berpengaruh sangat nyata terhadap hasil gabah padi S-969. Rata-rata hasil gabah meningkat tajam dari `Kontrol` ($3,97\text{ ton/ha}$) dan `PK` tanpa nitrogen ($4,44\text{ ton/ha}$) menuju pemupukan yang mengandung Nitrogen: `N` ($5,35\text{ ton/ha}$), `NP` ($5,70\text{ ton/ha}$), `NK` ($5,75\text{ ton/ha}$), hingga tertinggi pada `NPK` lengkap ($6,30\text{ ton/ha}$).
+3. **Evaluasi Efektivitas Pengelompokan (`Kelompok`)**:
+   * Diperoleh **`F value = 98.8`** dengan **`Pr(>F) = 4.19e-10 ***`** ($< 0,001$), di mana Kelompok IV memiliki rata-rata kesuburan tertinggi ($5,62\text{ ton/ha}$) sedangkan Kelompok II terendah ($4,93\text{ ton/ha}$).
+   * Nilai **Efisiensi Relatif mencapai $1375,6\%$** dan **KK sangat kecil ($1,47\%$)**! Ini membuktikan bahwa keputusan peneliti menggunakan **RAK sangat tepat**: andaikata lahan ini dianalisis dengan RAL tanpa blok, KTG akan membengkak hampir 14 kali lipat!
+
+**Kalimat Kesimpulan Siap Kutip (Format Laporan Penelitian):**
+> *"Hasil analisis ragam Rancangan Acak Kelompok menunjukkan bahwa pemberian kombinasi pupuk NPK berpengaruh sangat nyata terhadap hasil gabah padi genotif S-969 ($F_{\text{hitung}} = 515,70$; $p\text{-value} = 3,18 \times 10^{-16} < 0,01$). Pengelompokan petak sawah juga terbukti sangat efektif mengendalikan keragaman kesuburan lahan ($F_{\text{kelompok}} = 98,80$; $p\text{-value} = 4,19 \times 10^{-10} < 0,01$) sehingga menekan Koefisien Keragaman percobaan hingga $1,47\%$. Perlakuan pemupukan lengkap `NPK` menghasilkan rata-rata gabah tertinggi sebesar $6,30\text{ ton/ha}$, sedangkan petak `Kontrol` menghasilkan rata-rata terendah sebesar $3,97\text{ ton/ha}$."*
+</div>

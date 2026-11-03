@@ -1,0 +1,406 @@
+---
+title: "Modul 05: Eksplorasi Hubungan Dua Peubah & Analisis Korelasi"
+output:
+  rmdformats::robobook:
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: show
+    toc_depth: 3
+    use_bookdown: true
+    css: "../assets/style_robobook.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 5,
+  comment = "#>"
+)
+```
+
+# Peta Metode Analisis Hubungan Dua Peubah
+
+Setelah membahas perbandingan nilai tengah perlakuan pada perancangan percobaan di Modul 01–04, pada modul ini fokus pembahasan beralih pada cara **mengeksplorasi dan menguji keeratan hubungan (asosiasi) antara dua peubah ($X$ dan $Y$)**.
+
+<div class="kotak-konsep">
+**Perbedaan Mendasar: Analisis Korelasi vs Analisis Regresi!**
+
+* **Analisis Korelasi (Modul 05)**: Mengukur **arah dan kekuatan keeratan hubungan yang bersifat simetris/setara** antara dua peubah ($r_{XY} = r_{YX}$), tanpa mengharuskan peubah yang satu menjadi penyebab bagi peubah yang lain.
+* **Analisis Regresi (Modul 06)**: Memodelkan **hubungan fungsional/sebab-akibat satu arah**, di mana peubah bebas ($X$, prediktor) digunakan untuk menduga atau menjelaskan peubah tak bebas ($Y$, respon).
+</div>
+
+Pemilihan metode analisis asosiasi ditentukan oleh **skala pengukuran kedua peubah** dan **ada tidaknya pencilan (*outlier*)**:
+
+| Skala Peubah $X$ & $Y$ | Kondisi Data / Pola Hubungan | Metode Analisis yang Tepat |
+| :--- | :--- | :--- |
+| **Kuantitatif Kontinu vs Kontinu** | Pola hubungan **linier**, sebaran normal bikariat, **bebas *outlier***; menguji $H_0: \rho = 0$. | **Korelasi Momen Hasil-Kali Pearson ($r$)** + Uji-$t$ |
+| **Kuantitatif Kontinu vs Kontinu** | Menguji korelasi terhadap suatu **nilai konstanta bukan nol ($H_0: \rho = \rho_0$)** atau membangun selang kepercayaan $\rho$. | **Transformasi $Z$ Fisher ($\text{atanh}$)** |
+| **Ordinal / Skor** atau **Kontinu Ber-*Outlier*** | Terdapat **pencilan ekstrem**, hubungan monoton melengkung, atau data berskala peringkat. | **Korelasi Peringkat Spearman ($r_s$)** |
+| **Kategorik Nominal/Ordinal vs Kategorik** | Data berupa frekuensi cacahan sel kategori silang ($b \times k$). | **Tabel Kontingensi & Uji Khi-Kuadrat ($\chi^2$)** |
+
+---
+
+# Analisis 5.1: Scatter Plot & Korelasi Linier Pearson + Uji-$t$ ($H_0: \rho = 0$)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Diagram Pencar (*Scatter Plot*) & Koefisien Korelasi Pearson ($r$):**
+
+Langkah wajib pertama sebelum menghitung korelasi apa pun adalah memetakan pasangan $(X_i, Y_i)$ ke dalam **Diagram Pencar (*Scatter Plot*)**. Mengapa? Karena angka korelasi $r \approx 0$ bisa saja berasal dari dua peubah yang sebenarnya memiliki hubungan kuadratik (parabola sempurna) namun bukan garis lurus!
+
+**Koefisien Korelasi Linier Pearson ($r$)** mengukur derajat keeratan **hubungan garis lurus** dengan nilai berkisar pada $-1 \le r \le +1$:
+* $r > 0$ (mendekati $+1$): Hubungan linier **positif/searah** yang kuat ($X$ meningkat $\rightarrow$ $Y$ meningkat).
+* $r < 0$ (mendekati $-1$): Hubungan linier **negatif/berlawanan arah** yang kuat ($X$ meningkat $\rightarrow$ $Y$ menurun).
+* $r \approx 0$: Tidak terdapat hubungan **linier** antara $X$ dan $Y$.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Dua Studi Kasus Korelasi Linier Pearson:**
+
+Gunakan **Korelasi Pearson** apabila kedua peubah berskala kuantitatif kontinu (interval/rasio), diagram pencar menunjukkan kecenderungan garis lurus, dan tidak terdapat pencilan ekstrem:
+1. **Kasus 1 — Jarak Tempuh vs Emisi Gas Hidrokarbon (`data/10_emisi_hc_korelasi.csv`)**: Pengukuran jarak tempuh kumulatif (ribu km) dan emisi gas buang HC (gram/km) pada $n = 10$ unit kendaraan dalam kondisi mesin normal.
+2. **Kasus 2 — Frekuensi Derik Jangkrik vs Suhu Udara (`data/11_jangkrik_suhu.csv`)**: Pengamatan bioakustik entomologi pada $n = 15$ pengamatan mengenai banyaknya derik jangkrik tanah (*striped ground cricket*) per detik dan suhu udara lingkungan (°F).
+</div>
+
+## Rumus Koefisien Korelasi Pearson, Statistik Uji-$t$, & Hipotesis
+
+Koefisien korelasi contoh Pearson ($r$) didefinisikan sebagai rasio peragam (*covariance*) terhadap hasil kali simpangan baku kedua peubah:
+
+$$r = \frac{S_{XY}}{\sqrt{S_{XX} \cdot S_{YY}}} = \frac{\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})}{\sqrt{\sum_{i=1}^n (X_i - \bar{X})^2 \sum_{i=1}^n (Y_i - \bar{Y})^2}}$$
+
+Untuk menguji apakah korelasi linier di populasi ($\rho$) berbeda nyata dari nol:
+
+* **$H_0 : \rho = 0$** (Tidak terdapat hubungan linier antara peubah $X$ dan peubah $Y$).
+* **$H_1 : \rho \neq 0$** (Terdapat hubungan linier yang nyata antara peubah $X$ dan peubah $Y$).
+
+Statistik uji yang digunakan mengikuti sebaran $t$-Student berderajat bebas $(n - 2)$:
+
+$$t_{\text{hitung}} = \frac{r \sqrt{n - 2}}{\sqrt{1 - r^2}} \sim t_{(n - 2)}$$
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r pearson-scatter, fig.width=10, fig.height=4.6, fig.cap="Diagram pencar (scatter plot) dan kecenderungan linier pada kasus Emisi HC Mobil (kiri) serta Derik Jangkrik vs Suhu Udara (kanan)."}
+# Langkah 1: Membaca kedua dataset korelasi
+df_hc       <- read.csv("../data/10_emisi_hc_korelasi.csv")
+df_jangkrik <- read.csv("../data/11_jangkrik_suhu.csv")
+
+# Langkah 2: Visualisasi Scatter Plot berdampingan sebagai pemeriksaan pola linier
+par(mfrow = c(1, 2))
+plot(df_hc$Jarak_Tempuh_X, df_hc$Emisi_HC_Normal,
+     pch = 19, col = "#2980b9", cex = 1.3,
+     xlab = "Jarak Tempuh Mobil (ribu km)", ylab = "Emisi HC (gram/km)",
+     main = "Scatter Plot Jarak Tempuh vs Emisi HC")
+abline(lm(Emisi_HC_Normal ~ Jarak_Tempuh_X, data = df_hc), col = "#e74c3c", lwd = 2)
+
+plot(df_jangkrik$Derik_Per_Detik, df_jangkrik$Suhu_Fahrenheit,
+     pch = 19, col = "#27ae60", cex = 1.3,
+     xlab = "Frekuensi Derik Jangkrik per Detik", ylab = "Suhu Udara (°F)",
+     main = "Scatter Plot Derik Jangkrik vs Suhu")
+abline(lm(Suhu_Fahrenheit ~ Derik_Per_Detik, data = df_jangkrik), col = "#e74c3c", lwd = 2)
+par(mfrow = c(1, 1))
+
+# Langkah 3: Uji Korelasi Pearson Kasus 1 (Jarak Tempuh vs Emisi HC Normal)
+cor.test(df_hc$Jarak_Tempuh_X, df_hc$Emisi_HC_Normal, method = "pearson")
+
+# Langkah 4: Uji Korelasi Pearson Kasus 2 (Derik Jangkrik vs Suhu Udara)
+cor.test(df_jangkrik$Derik_Per_Detik, df_jangkrik$Suhu_Fahrenheit, method = "pearson")
+
+# Langkah 5: Pembuktian manual rumus t_hitung pada Kasus Jangkrik
+n_j   <- nrow(df_jangkrik)
+r_j   <- cor(df_jangkrik$Derik_Per_Detik, df_jangkrik$Suhu_Fahrenheit)
+t_man <- r_j * sqrt(n_j - 2) / sqrt(1 - r_j^2)
+cat(sprintf("Verifikasi Manual: r = %.4f | t_hitung = %.4f | db = %d\n", r_j, t_man, n_j - 2))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `cor.test(..., method = "pearson")`:**
+
+1. **Kasus 1 — Jarak Tempuh vs Emisi HC Normal ($n = 10$, `df = 8`)**:
+   * Nilai penduga korelasi pada `sample estimates: cor` adalah **`0.9978`** (mendekati $+1,00$, hubungan positif sangat erat).
+   * Nilai **`t = 42.824`** dengan **`p-value = 9.748e-11`** ($< 0,001$) serta selang kepercayaan 95% bagi $\rho$ adalah **`[0.9905, 0.9995]`** (tidak memuat angka nol). Tolak $H_0$: semakin jauh jarak tempuh kumulatif mobil, semakin tinggi emisi gas HC secara linier.
+2. **Kasus 2 — Derik Jangkrik vs Suhu Udara ($n = 15$, `df = 13`)**:
+   * Nilai **`cor = 0.8351`** menunjukkan keeratan hubungan positif yang kuat antara aktivitas metabolisme akustik jangkrik dan suhu udara.
+   * Nilai **`t = 5.4745`** (sama persis dengan perhitungan rumus manual!) dan **`p-value = 0.0001067`** ($< 0,01$), dengan selang kepercayaan 95% **`[0.5643, 0.9437]`**.
+
+**Kalimat Kesimpulan Siap Kutip (Kasus Derik Jangkrik):**
+> *"Hasil analisis korelasi linier Pearson menunjukkan terdapat hubungan positif yang kuat dan sangat nyata antara frekuensi derik jangkrik per detik dengan suhu udara lingkungan ($r = 0,8351$; $t_{\text{hitung}} = 5,4745$; $\text{db} = 13$; $p\text{-value} = 0,00011 < 0,01$; $\text{SK}_{95\%}: [0,5643;\; 0,9437]$)."*
+</div>
+
+---
+
+# Analisis 5.2: Uji Hipotesis Korelasi Umum ($H_0: \rho = \rho_0$) dengan Transformasi $Z$ Fisher
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Mengapa Uji-$t$ Tidak Berlaku Saat Menguji $H_0: \rho = 0,70$?**
+
+Fungsi `cor.test()` bawaan R **hanya menguji hipotesis nol $H_0: \rho = 0$**. Ketika nilai korelasi populasi yang dihipotesiskan bukan nol ($\rho_0 \neq 0$, misalnya $\rho_0 = 0,70$), sebaran penarikan contoh dari $r$ menjadi **sangat menjulur/miring (*skewed*)** karena nilai $r$ terbentur batas atas $+1,00$!
+
+Untuk menormalkan sebaran yang miring tersebut, R.A. Fisher merumuskan **Transformasi $Z$ Fisher** menggunakan fungsi tangen hiperbolik balik ($\text{atanh}$), yang mengubah $r$ menjadi peubah $Z_r$ yang menyebar mendekati **Normal dengan ragam konstan $\frac{1}{n - 3}$**!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Pengujian Klaim Literatur $\rho_0 = 0,70$:**
+
+* **Kapan Digunakan?** Gunakan **Transformasi $Z$ Fisher** apabila Anda ingin: (1) menguji apakah koefisien korelasi populasi sama dengan suatu patokan standar tertentu yang bukan nol ($H_0: \rho = \rho_0$), atau (2) menghitung selang kepercayaan bagi $\rho$ secara manual.
+* **Skenario Penelitian**: Literatur terdahulu menyatakan bahwa korelasi antara frekuensi derik jangkrik dan suhu udara di alam adalah sebesar $\rho_0 = 0,70$. Berdasarkan sampel $n = 15$ pengamatan kita yang menghasilkan $r = 0,8351$, apakah korelasi populasi kita berbeda nyata dari klaim $0,70$ tersebut pada $\alpha = 5\%$?
+</div>
+
+## Rumus Transformasi $Z$ Fisher & Hipotesis
+
+Transformasi logaritma natural Fisher untuk korelasi sampel $r$ dan nilai hipotesis $\rho_0$:
+
+$$Z_r = \frac{1}{2} \ln\left(\frac{1 + r}{1 - r}\right) = \text{atanh}(r), \qquad Z_{\rho_0} = \frac{1}{2} \ln\left(\frac{1 + \rho_0}{1 - \rho_0}\right) = \text{atanh}(\rho_0)$$
+
+Statistik uji $Z$ dan Selang Kepercayaan $(1 - \alpha)$ melalui transformasi balik $\tanh(\cdot)$:
+
+$$Z_{\text{hitung}} = \frac{Z_r - Z_{\rho_0}}{\sqrt{\frac{1}{n - 3}}} \sim N(0, 1), \qquad \text{SK}_{(1-\alpha)}(\rho) = \tanh\!\left(Z_r \pm Z_{\alpha/2}\sqrt{\frac{1}{n - 3}}\right)$$
+
+**Pasangan Hipotesis:**
+
+* **$H_0 : \rho = 0,70$** (Korelasi populasi antara derik jangkrik dan suhu udara sama dengan $0,70$).
+* **$H_1 : \rho \neq 0,70$** (Korelasi populasi berbeda dari $0,70$ — uji dua arah; atau $H_1 : \rho > 0,70$ untuk uji satu arah kanan).
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r fisher-z}
+# Langkah 1: Membangun fungsi kustom Uji Hipotesis Korelasi Umum (Transformasi Z Fisher)
+uji_fisher_z <- function(x, y, rho_0 = 0.70, alpha = 0.05) {
+  n       <- length(x)
+  r       <- cor(x, y, method = "pearson")
+  z_r     <- atanh(r)                 # Sama persis dengan 0.5 * log((1 + r)/(1 - r))
+  z_0     <- atanh(rho_0)             # Nilai Z untuk rho_0
+  se_z    <- sqrt(1 / (n - 3))        # Galat baku transformasi Z Fisher
+  z_hit   <- (z_r - z_0) / se_z
+  p_2arah <- 2 * (1 - pnorm(abs(z_hit)))
+  p_kanan <- 1 - pnorm(z_hit)         # p-value satu arah (H1: rho > rho_0)
+
+  # Menghitung Selang Kepercayaan 95% bagi rho melalui transformasi balik tanh()
+  z_kritis <- qnorm(1 - alpha / 2)
+  sk_bawah <- tanh(z_r - z_kritis * se_z)
+  sk_atas  <- tanh(z_r + z_kritis * se_z)
+
+  data.frame(
+    n             = n,
+    r_sampel      = round(r, 4),
+    rho_0         = rho_0,
+    Z_r           = round(z_r, 4),
+    Z_rho0        = round(z_0, 4),
+    Z_hitung      = round(z_hit, 4),
+    p_value_2arah = round(p_2arah, 4),
+    p_value_kanan = round(p_kanan, 4),
+    SK95_Bawah    = round(sk_bawah, 4),
+    SK95_Atas     = round(sk_atas, 4)
+  )
+}
+
+# Langkah 2: Menerapkan fungsi pada data Derik Jangkrik vs Suhu untuk menguji H0: rho = 0.70
+uji_fisher_z(df_jangkrik$Derik_Per_Detik, df_jangkrik$Suhu_Fahrenheit, rho_0 = 0.70)
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output Transformasi $Z$ Fisher:**
+
+1. **Nilai Transformasi**: Korelasi contoh `r_sampel = 0.8351` ditransformasikan menjadi `Z_r = 1.2049`, sedangkan nilai hipotesis `rho_0 = 0.70` menjadi `Z_rho0 = 0.8673` dengan galat baku $\sqrt{1 / (15 - 3)} = 0,2887$.
+2. **Keputusan Statistik (`Z_hitung = 1.1695`)**:
+   * Karena $|Z_{\text{hitung}}| = 1,1695 < Z_{0,025} = 1,96$ dan **`p_value_2arah = 0.2422 > 0.05`** (bahkan untuk uji satu arah `p_value_kanan = 0.1211 > 0.05`), maka **Gagal Menolak $H_0$ (Terima $H_0$)**!
+   * Perhatikan pula `SK95_Bawah = 0.5643` dan `SK95_Atas = 0.9437` — angka ini **identik 100%** dengan selang kepercayaan yang dicetak `cor.test()` pada Analisis 5.1, dan karena nilai `0.70` berada di dalam rentang `[0.5643, 0.9437]`, klaim $\rho_0 = 0,70$ tidak ditolak!
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan uji Transformasi $Z$ Fisher pada taraf nyata $\alpha = 5\%$, diperoleh nilai $Z_{\text{hitung}} = 1,1695$ dengan $p\text{-value} = 0,2422 > 0,05$, sehingga gagal menolak $H_0$. Dengan demikian, belum terdapat cukup bukti untuk menyatakan bahwa korelasi populasi antara frekuensi derik jangkrik dan suhu udara berbeda dari $0,70$."*
+</div>
+
+---
+
+# Analisis 5.3: Korelasi Peringkat Spearman (Data Ber-*Outlier* atau Skala Ordinal)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Mengapa Korelasi Spearman Kebal terhadap *Outlier*?**
+
+Korelasi Pearson sangat peka terhadap **pencilan (*outlier*)**: satu titik ekstrem saja dapat merusak rata-rata $\bar{X}, \bar{Y}$ dan simpangan baku secara drastis. Sebaliknya, **Korelasi Peringkat Spearman ($r_s$)** bekerja dengan **mengubah seluruh nilai pengamatan menjadi nomor urut peringkat (*rank* $1, 2, \dots, n$)** terlebih dahulu, lalu menghitung korelasi antar-peringkat tersebut! Selama urutan peringkatnya tidak berubah, sebesar apa pun lonjakan angka pencilan tidak akan menggoyahkan nilai $r_s$.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus — Kerusakan Mesin Mobil ke-10 pada Data Emisi HC:**
+
+Gunakan **Korelasi Spearman** ketika:
+1. Data kuantitatif mengandung **pencilan ekstrem (*outlier*)** yang tidak dapat dibuang begitu saja.
+2. Hubungan antar-peubah bersifat **monoton melengkung** (misal eksponensial/logaritmik: selalu naik tetapi bukan garis lurus).
+3. Salah satu atau kedua peubah berskala **ordinal/skor** (misal skor keparahan penyakit daun $1\text{--}5$ vs skor ketahanan varietas).
+
+**Skenario Kasus**: Pada dataset `data/10_emisi_hc_korelasi.csv`, kolom `Emisi_HC_Outlier` merepresentasikan kondisi ketika mobil ke-10 mengalami kebocoran katup pembakaran sehingga emisinya melonjak dari `1.05` menjadi **`2.35` gram/km**. Mari kita buktikan dampaknya pada Pearson vs Spearman!
+</div>
+
+## Rumus Korelasi Peringkat Spearman & Hipotesis
+
+Jika tidak terdapat peringkat kembar (*ties*), koefisien korelasi Spearman dihitung dari selisih peringkat $d_i = \text{Rank}(X_i) - \text{Rank}(Y_i)$:
+
+$$r_s = 1 - \frac{6 \sum_{i=1}^n d_i^2}{n(n^2 - 1)}, \qquad -1 \le r_s \le +1$$
+
+*(Apabila terdapat peringkat kembar, R secara otomatis menghitung korelasi Pearson pada vektor peringkat rata-rata).*
+
+**Pasangan Hipotesis:**
+
+* **$H_0 : \rho_s = 0$** (Tidak terdapat hubungan monoton antara peringkat $X$ dan peringkat $Y$).
+* **$H_1 : \rho_s \neq 0$** (Terdapat hubungan monoton yang nyata antara $X$ dan $Y$).
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r spearman-outlier, fig.width=10, fig.height=4.6, fig.cap="Perbandingan dampak satu pencilan ekstrem pada mobil ke-10 (titik merah): korelasi Pearson merosot tajam dari 0,9978 menjadi 0,7811, sedangkan korelasi Spearman tetap kokoh 1,0000."}
+# Langkah 1: Menghitung korelasi Pearson & Spearman pada data Normal vs data Ber-Outlier
+r_pearson_normal   <- cor.test(df_hc$Jarak_Tempuh_X, df_hc$Emisi_HC_Normal, method = "pearson")
+r_spearman_normal  <- cor.test(df_hc$Jarak_Tempuh_X, df_hc$Emisi_HC_Normal, method = "spearman", exact = FALSE)
+
+r_pearson_outlier  <- cor.test(df_hc$Jarak_Tempuh_X, df_hc$Emisi_HC_Outlier, method = "pearson")
+r_spearman_outlier <- cor.test(df_hc$Jarak_Tempuh_X, df_hc$Emisi_HC_Outlier, method = "spearman", exact = FALSE)
+
+# Langkah 2: Menyusun tabel perbandingan langsung Pearson vs Spearman
+perbandingan_korelasi <- data.frame(
+  Kondisi_Data = c("Tanpa Outlier (Normal)", "Dengan 1 Outlier (Mobil ke-10 = 2.35)"),
+  r_Pearson    = round(c(r_pearson_normal$estimate, r_pearson_outlier$estimate), 4),
+  p_Pearson    = signif(c(r_pearson_normal$p.value, r_pearson_outlier$p.value), 4),
+  r_Spearman   = round(c(r_spearman_normal$estimate, r_spearman_outlier$estimate), 4),
+  p_Spearman   = signif(c(r_spearman_normal$p.value, r_spearman_outlier$p.value), 4)
+)
+print(perbandingan_korelasi)
+
+# Langkah 3: Visualisasi berdampingan tarikan pencilan terhadap garis linier
+par(mfrow = c(1, 2))
+plot(df_hc$Jarak_Tempuh_X, df_hc$Emisi_HC_Normal, pch = 19, col = "#2980b9", cex = 1.3,
+     ylim = c(0.3, 2.5), xlab = "Jarak Tempuh (ribu km)", ylab = "Emisi HC (g/km)",
+     main = "Tanpa Outlier (r = 0.9978 | rs = 1.00)")
+abline(lm(Emisi_HC_Normal ~ Jarak_Tempuh_X, data = df_hc), col = "#2980b9", lwd = 2)
+
+warna_titik <- ifelse(df_hc$Mobil == 10, "#e74c3c", "#2c3e50")
+plot(df_hc$Jarak_Tempuh_X, df_hc$Emisi_HC_Outlier, pch = 19, col = warna_titik, cex = 1.4,
+     ylim = c(0.3, 2.5), xlab = "Jarak Tempuh (ribu km)", ylab = "Emisi HC (g/km)",
+     main = "Dengan 1 Outlier (r = 0.7811 | rs = 1.00)")
+abline(lm(Emisi_HC_Outlier ~ Jarak_Tempuh_X, data = df_hc), col = "#e74c3c", lwd = 2, lty = 2)
+text(df_hc$Jarak_Tempuh_X[10] - 34, df_hc$Emisi_HC_Outlier[10], "Outlier (2.35)", col = "#e74c3c", font = 2)
+par(mfrow = c(1, 1))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Bukti Nyata Kekekaran (*Robustness*) Korelasi Spearman:**
+
+1. **Kejatuhan Korelasi Pearson**: Hanya gara-gara **satu amatan ekstrem** pada mobil ke-10 (`2.35` g/km), koefisien korelasi Pearson anjlok drastis dari **`0.9978`** menjadi **`0.7811`**, dan garis linier putus-putus merah terangkat menjauhi sembilan titik pengamatan lainnya!
+2. **Ketangguhan Korelasi Spearman (`rho = 1`)**: Baik sebelum maupun sesudah terjadi lonjakan angka `2.35`, mobil ke-10 tetap menempati peringkat ke-10 pada jarak tempuh sekaligus peringkat ke-10 pada emisi HC ($d_i = 0$ untuk seluruh $i = 1 \dots 10$), sehingga nilai **`r_Spearman = 1.0000` (`p < 2.2e-16`)** sama sekali tidak terusik!
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Pada data emisi gas buang yang mengandung pencilan ekstrem di amatan ke-10, koefisien korelasi Pearson mengalami distorsi penurunan dari $0,9978$ menjadi $0,7811$, sedangkan analisis korelasi peringkat Spearman tetap kekar menunjukkan hubungan monoton positif sempurna ($r_s = 1,0000$; $p < 2,2 \times 10^{-16}$)."*
+</div>
+
+---
+
+# Analisis 5.4: Tabel Kontingensi & Uji Khi-Kuadrat ($\chi^2$) untuk Dua Peubah Kategorik
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Menguji Kebebasan Dua Peubah Kategorik:**
+
+Apabila kedua peubah bersifat **kualitatif/kategorik** (sehingga tidak memiliki angka rata-rata ataupun peringkat kontinu), pengamatan diringkas menjadi frekuensi cacahan sel di dalam **Tabel Kontingensi $b \times k$** ($b$ baris $\times$ $k$ kolom). **Uji Khi-Kuadrat ($\chi^2$)** bekerja dengan membandingkan **Frekuensi Teramati ($O_{ij}$)** di lapangan terhadap **Frekuensi Harapan ($E_{ij}$)** yang seharusnya terjadi andaikata kedua peubah sama sekali tidak berhubungan (*independen*). Semakin besar selisih $(O_{ij} - E_{ij})^2$, semakin kuat bukti adanya keterkaitan antar-kedua peubah!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Sosial-Ekonomi Pertanian:**
+
+* **Kapan Digunakan?** Gunakan **Tabel Kontingensi & Uji Khi-Kuadrat** ketika peubah $X$ dan $Y$ keduanya merupakan kategori kualitatif, dengan syarat **seluruh frekuensi harapan $E_{ij} \ge 5$** (jika pada tabel $2 \times 2$ ada $E_{ij} < 5$, gunakan alternatif `fisher.test()`).
+* **Skenario Penelitian**: Survei penyuluhan pertanian terhadap $N = 110$ petani padi mengkaji apakah terdapat asosiasi antara **Status Penguasaan Lahan** (`Sewa/Sakap` vs `Milik_Sendiri`) dengan **Tingkat Adopsi Benih Varietas Unggul Baru** (`Rendah`, `Sedang`, `Tinggi`).
+</div>
+
+## Rumus Statistik Uji Khi-Kuadrat ($\chi^2$), Koefisien Asosiasi, & Hipotesis
+
+Frekuensi harapan pada sel baris ke-$i$ kolom ke-$j$ di bawah asumsi kebebasan adalah:
+
+$$E_{ij} = \frac{(\text{Total Baris ke-}i) \times (\text{Total Kolom ke-}j)}{\text{Total Seluruh Sampel } (N)}$$
+
+Statistik uji Khi-Kuadrat Pearson dan ukuran keeratan **Cramér's $V$**:
+
+$$\chi^2_{\text{hitung}} = \sum_{i=1}^b \sum_{j=1}^k \frac{(O_{ij} - E_{ij})^2}{E_{ij}} \sim \chi^2_{((b - 1)(k - 1))}, \qquad V = \sqrt{\frac{\chi^2_{\text{hitung}}}{N \cdot \min(b - 1,\; k - 1)}}$$
+
+**Pasangan Hipotesis:**
+
+* **$H_0$**: Status penguasaan lahan dan tingkat adopsi benih unggul **saling bebas** (tidak terdapat asosiasi).
+* **$H_1$**: Terdapat **asosiasi (keterkaitan) nyata** antara status penguasaan lahan dan tingkat adopsi benih unggul.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r chi-square-kontingensi, fig.cap="Distribusi persentase tingkat adopsi benih unggul pada kelompok petani penyewa/penyakap dibandingkan petani pemilik lahan sendiri."}
+# Langkah 1: Menyusun matriks Tabel Kontingensi 2 x 3 beserta label baris dan kolom
+tabel_adopsi <- matrix(
+  c(28, 15,  7,
+    12, 25, 23),
+  nrow = 2, byrow = TRUE,
+  dimnames = list(
+    Status_Lahan = c("Sewa/Sakap", "Milik_Sendiri"),
+    Adopsi_Benih = c("Rendah", "Sedang", "Tinggi")
+  )
+)
+
+# Menampilkan tabel frekuensi teramati (O_ij) lengkap dengan total baris & kolom
+addmargins(tabel_adopsi)
+
+# Langkah 2: Menjalankan Uji Khi-Kuadrat Independensi
+uji_chi <- chisq.test(tabel_adopsi)
+print(uji_chi)
+
+# Langkah 3: Memeriksa syarat validitas frekuensi harapan (seluruh sel wajib E_ij >= 5)
+round(uji_chi$expected, 2)
+
+# Langkah 4: Menghitung Koefisien Kontingensi (C) dan Cramer's V
+N_tot     <- sum(tabel_adopsi)
+koef_C    <- sqrt(uji_chi$statistic / (uji_chi$statistic + N_tot))
+cramers_V <- sqrt(uji_chi$statistic / (N_tot * (min(dim(tabel_adopsi)) - 1)))
+cat(sprintf("Koefisien Kontingensi C = %.4f | Cramer's V = %.4f\n", koef_C, cramers_V))
+
+# Langkah 5: Visualisasi profil persentase adopsi per status penguasaan lahan
+prop_adopsi <- prop.table(tabel_adopsi, margin = 1) * 100
+barplot(t(prop_adopsi), beside = TRUE,
+        col = c("#e74c3c", "#f39c12", "#27ae60"), ylim = c(0, 65),
+        xlab = "Status Penguasaan Lahan Petani",
+        ylab = "Persentase Petani dalam Kelompok (%)",
+        main = "Profil Tingkat Adopsi Benih Unggul Berdasarkan Status Lahan")
+legend("topright", legend = colnames(tabel_adopsi),
+       fill = c("#e74c3c", "#f39c12", "#27ae60"), title = "Tingkat Adopsi", bty = "n")
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `chisq.test(tabel_adopsi)`:**
+
+1. **Pemeriksaan Syarat Validitas (`uji_chi$expected`)**: Seluruh 6 sel memiliki nilai harapan antara `13.64` hingga `21.82` (semuanya $\ge 5$), sehingga pendekatan sebaran Khi-Kuadrat 100% sah digunakan.
+2. **Keputusan Uji Statistik**:
+   * Diperoleh **`X-squared = 16.662`** pada derajat bebas **`df = 2`** ($(2 - 1)(3 - 1) = 2$) dengan **`p-value = 0.0002409`** ($< 0,01$).
+   * Karena `p-value < 0.05`, maka **Tolak $H_0$**! Terdapat hubungan asosiasi yang sangat nyata dengan kekuatan moderat (`Cramer's V = 0.3892`).
+3. **Arah Pola Asosiasi (dari Grafik Persentase)**: Mayoritas petani `Sewa/Sakap` terkonsentrasi pada tingkat adopsi **Rendah ($56,0\%$)**, sedangkan mayoritas petani `Milik_Sendiri` berada pada tingkat adopsi **Sedang ($41,7\%$) dan Tinggi ($38,3\%$)**.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Hasil Uji Khi-Kuadrat pada tabel kontingensi menunjukkan terdapat asosiasi yang sangat nyata antara status penguasaan lahan petani dan tingkat adopsi benih unggul ($\chi^2_{\text{hitung}} = 16,662$; $\text{db} = 2$; $p\text{-value} = 0,00024 < 0,01$; $\text{Cramér's } V = 0,3892$), di mana petani pemilik lahan sendiri memiliki kecenderungan adopsi teknologi sedang hingga tinggi ($80,0\%$) yang jauh lebih besar dibandingkan petani penyewa/penyakap ($44,0\%$)."*
+</div>

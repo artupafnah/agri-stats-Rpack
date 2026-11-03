@@ -1,0 +1,512 @@
+---
+title: "Modul 06: Analisis Regresi, Diagnostik Asumsi, & Seleksi Peubah"
+output:
+  rmdformats::robobook:
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: show
+    toc_depth: 3
+    use_bookdown: true
+    css: "../assets/style_robobook.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 5,
+  comment = "#>"
+)
+```
+
+# Pengantar Pemodelan Regresi dalam Ilmu Pertanian & Biologi
+
+Apabila pada **Modul 05** kita mengukur keeratan hubungan yang bersifat simetris antara dua peubah melalui korelasi, maka pada **Modul 06** kita membangun **model persamaan matematis satu arah (*fungsional / kausalitas*)** untuk menduga atau menjelaskan keragaman **Peubah Tak Bebas / Respon ($Y$)** berdasarkan satu atau lebih **Peubah Bebas / Prediktor ($X_1, X_2, \dots, X_k$)**.
+
+| Jenis Model & Metode di Modul 06 | Karakteristik Peubah $Y$ & $X$ | Fungsi Utama di R |
+| :--- | :--- | :--- |
+| **1. Regresi Linier Sederhana (OLS)** | $Y$ kontinu, **1 peubah bebas** $X$ kontinu. | `lm(Y ~ X)` |
+| **2. Regresi Linier Berganda (OLS & Matriks)** | $Y$ kontinu, **$k \ge 2$ peubah bebas** $X_1, \dots, X_k$ bebas multikolinieritas. | `lm(Y ~ X1 + X2)` & `solve(t(X) %*% X)` |
+| **3. Regresi Logistik Biner** | **$Y$ kategorik biner (`0` / `1`)**, $X$ kontinu/kategorik. | `glm(Y ~ X, family = binomial)` |
+| **4. Diagnostik Asumsi Sisaan & Ragam** | Pemeriksaan kenormalan galat dan kehomogenan ragam. | `lillie.test()`, `pearson.test()`, `bartlett.test()` |
+| **5. Seleksi Peubah & Regresi Berbias** | Mengatasi **multikolinieritas serius ($\text{VIF} > 10$)** atau menyaring prediktor terbaik. | `car::vif()`, `step()`, `lm.ridge()`, `cv.glmnet()`, `pcr()`, `plsr()` |
+
+---
+
+# Analisis 6.1: Regresi Linier Sederhana (OLS, Uji $F$, Uji-$t$ Dua Arah & Satu Arah, $R^2$, Root MSE)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Metode Kuadrat Terkecil (*Ordinary Least Squares* / OLS):**
+
+**Regresi Linier Sederhana** mencari satu garis lurus terbaik $\hat{Y}_i = b_0 + b_1 X_i$ yang melintasi gugus titik pengamatan sedemikian rupa sehingga **jumlah kuadrat jarak vertikal (sisaan $e_i = Y_i - \hat{Y}_i$) bernilai paling minimum**:
+$$\min_{b_0, b_1} \sum_{i=1}^n e_i^2 = \min_{b_0, b_1} \sum_{i=1}^n (Y_i - b_0 - b_1 X_i)^2$$
+* **Intersep ($b_0$)**: Nilai dugaan rata-rata $Y$ ketika $X = 0$ (bermakna praktis hanya jika $X = 0$ berada di sekitar rentang pengamatan).
+* **Kemiringan / *Slope* ($b_1$)**: Besarnya perubahan rata-rata pada $Y$ untuk setiap kenaikan **1 satuan** pada $X$.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Kurva Kalibrasi Residu Herbisida Atrazine:**
+
+* **Kapan Digunakan?** Gunakan **Regresi Linier Sederhana** ketika terdapat **satu peubah prediktor kuantitatif ($X$)** yang memengaruhi **satu peubah respon kontinu ($Y$)** secara linier, baik untuk mengukur besarnya laju perubahan $b_1$ maupun untuk memprediksi nilai $Y$ pada nilai $X$ tertentu.
+* **Skenario Penelitian**: Di laboratorium kimia pertanian, peneliti membangun kurva baku kromatografi untuk menduga **Relative Peak Area ($Y$)** berdasarkan **Konsentrasi standar herbisida Atrazine ($X$, dalam ppm)** pada $n = 8$ titik konsentrasi (`0.50` hingga `20.00` ppm). Selain uji dua arah standar, peneliti juga ingin menguji hipotesis satu arah kanan ($H_1: \beta_1 > 0$). Dataset tersimpan pada `data/12_atrazine_regresi_sederhana.csv`.
+</div>
+
+## Model Regresi, Rumus Penduga OLS, & Hipotesis
+
+Model regresi linier sederhana populasi dan persamaan dugaannya:
+
+$$Y_i = \beta_0 + \beta_1 X_i + \varepsilon_i, \quad \varepsilon_i \overset{\text{iid}}{\sim} N(0, \sigma^2) \qquad \implies \qquad \hat{Y}_i = b_0 + b_1 X_i$$
+
+Rumus penduga OLS, Koefisien Determinasi ($R^2$), dan Simpangan Baku Sisaan (*Root MSE*):
+
+$$b_1 = \frac{\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i=1}^n (X_i - \bar{X})^2}, \qquad b_0 = \bar{Y} - b_1 \bar{X}$$
+
+$$R^2 = \frac{\text{JK}_{\text{Regresi}}}{\text{JK}_{\text{Total}}} = 1 - \frac{\text{JK}_{\text{Galat}}}{\text{JK}_{\text{Total}}}, \qquad \text{Root MSE} = s_{y \cdot x} = \sqrt{\text{KTG}} = \sqrt{\frac{\sum_{i=1}^n (Y_i - \hat{Y}_i)^2}{n - 2}}$$
+
+**Pasangan Hipotesis Kemiringan Regresi ($\beta_1$):**
+
+* **Uji Dua Arah**: $H_0 : \beta_1 = 0$ vs $H_1 : \beta_1 \neq 0$ ($X$ berpengaruh linier nyata terhadap $Y$).
+* **Uji Satu Arah Kanan**: $H_0 : \beta_1 \le 0$ vs $H_1 : \beta_1 > 0$ (Peningkatan konsentrasi $X$ secara nyata **menaikkan** respon $Y$), menggunakan statistik $t_{\text{hitung}} = \frac{b_1}{\text{SE}(b_1)} \sim t_{(n - 2)}$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r slr-atrazine, fig.cap="Garis regresi linier sederhana Konsentrasi Atrazine vs Relative Peak Area beserta pita kepercayaan 95%."}
+# Langkah 1: Membaca data kalibrasi herbisida Atrazine
+df_atrazine <- read.csv("../data/12_atrazine_regresi_sederhana.csv")
+print(df_atrazine)
+
+# Langkah 2: Mengestimasi model OLS dengan lm() & menampilkan ringkasan lengkap + Tabel ANOVA
+mod_slr <- lm(Peak_Area_Y ~ Konsentrasi_X, data = df_atrazine)
+summary(mod_slr)
+anova(mod_slr)
+
+# Langkah 3: Menghitung Uji-t Satu Arah untuk H0: beta1 <= 0 vs H1: beta1 > 0
+t_hitung    <- coef(summary(mod_slr))["Konsentrasi_X", "t value"]
+db_galat    <- df.residual(mod_slr)
+p_satu_arah <- pt(t_hitung, df = db_galat, lower.tail = FALSE)
+cat(sprintf("t_hitung = %.4f | db = %d | p-value 1 arah (H1: beta1 > 0) = %s\n",
+            t_hitung, db_galat, format.pval(p_satu_arah)))
+
+# Langkah 4: Selang Kepercayaan 95% bagi intersep beta0 dan kemiringan beta1
+confint(mod_slr, level = 0.95)
+
+# Langkah 5: Visualisasi Garis Regresi beserta Pita Kepercayaan 95%
+x_baru  <- data.frame(Konsentrasi_X = seq(0, 21, length.out = 100))
+pita_ci <- predict(mod_slr, newdata = x_baru, interval = "confidence", level = 0.95)
+
+plot(df_atrazine$Konsentrasi_X, df_atrazine$Peak_Area_Y,
+     pch = 19, col = "#2c3e50", cex = 1.4,
+     xlab = "Konsentrasi Atrazine (ppm)", ylab = "Relative Peak Area",
+     main = "Garis Regresi Linier Sederhana Atrazine vs Peak Area")
+lines(x_baru$Konsentrasi_X, pita_ci[, "fit"], col = "#e74c3c", lwd = 2.2)
+lines(x_baru$Konsentrasi_X, pita_ci[, "lwr"], col = "#2980b9", lty = 2)
+lines(x_baru$Konsentrasi_X, pita_ci[, "upr"], col = "#2980b9", lty = 2)
+legend("topleft", legend = c("Titik Pengamatan", "Garis OLS: Y = 0.7857 + 1.3635 X", "Pita Kepercayaan 95%"),
+       pch = c(19, NA, NA), lty = c(NA, 1, 2), lwd = c(NA, 2.2, 1),
+       col = c("#2c3e50", "#e74c3c", "#2980b9"), bty = "n")
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `summary(mod_slr)` & `anova(mod_slr)`:**
+
+1. **Persamaan Regresi Dugaan**: Dari kolom `Estimate` diperoleh **`b0 = 0.7857`** dan **`b1 = 1.3635`**, sehingga:
+   $$\hat{Y} = 0,7857 + 1,3635 X$$
+   Artinya, setiap peningkatan konsentrasi Atrazine sebesar **$1\text{ ppm}$** akan menaikkan rata-rata *Relative Peak Area* sebesar **$1,3635$ satuan** (dengan $\text{SK}_{95\%}: [1,3506;\; 1,3765]$).
+2. **Uji-$t$ Dua Arah & Satu Arah serta Hubungannya dengan Uji $F$**:
+   * Pada `Konsentrasi_X`, diperoleh **`t value = 258.12`** dengan nilai-$p$ dua arah **`2.28e-13 ***`** dan nilai-$p$ satu arah kanan separuhnya yaitu **`1.14e-13`** ($< 0,001$, Tolak $H_0$).
+   * Perhatikan pada `anova(mod_slr)`: nilai **`F value = 66625`** sama persis dengan kuadrat dari $t_{\text{hitung}}$ ($258,1189^2 = 66625,37$)! Kesetaraan $F = t^2$ ini berlaku khusus pada regresi linier sederhana ($k = 1$).
+3. **Ukuran Kebaikan Model (`Multiple R-squared` & `Residual standard error`)**:
+   * **`Multiple R-squared = 0.9999`** ($99,99\%$): Sebesar $99,99\%$ keragaman *Relative Peak Area* mampu dijelaskan secara linier oleh variasi konsentrasi Atrazine!
+   * **`Residual standard error = 0.1031`** ($\text{Root MSE} = \sqrt{0,0106} = 0,1031$ pada `6 degrees of freedom`): Simpangan baku melesetnya prediksi garis regresi sangat kecil, menandakan kurva kalibrasi sangat akurat.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan analisis regresi linier sederhana, konsentrasi Atrazine berpengaruh positif sangat nyata terhadap Relative Peak Area ($t_{\text{hitung}} = 258,12$; $p\text{-value satu arah} = 1,14 \times 10^{-13} < 0,01$) dengan persamaan regresi $\hat{Y} = 0,7857 + 1,3635 X$, koefisien determinasi $R^2 = 99,99\%$, dan simpangan baku sisaan ($\text{Root MSE}$) sebesar $0,1031$."*
+</div>
+
+---
+
+# Analisis 6.2: Regresi Linier Berganda & Pendugaan Matriks $\mathbf{b} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{Y}$
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Makna Koefisien Regresi Parsial & *Adjusted* $R^2$:**
+
+Pada fenomena biologis dan pertanian nyata, hasil panen atau bobot ternak ($Y$) hampir selalu dipengaruhi oleh **banyak peubah bebas sekaligus** ($X_1, X_2, \dots, X_k$). Dalam **Regresi Linier Berganda**:
+* Koefisien $b_1$ disebut **koefisien regresi parsial**, yakni perubahan rata-rata $Y$ ketika $X_1$ naik 1 satuan **dengan asumsi peubah bebas lainnya ($X_2, \dots, X_k$) dijaga konstan (*ceteris paribus*)**.
+* Karena nilai $R^2$ biasa **pasti selalu naik** walaupun kita menambahkan peubah sampah yang tidak relevan, maka untuk menilai dan membandingkan model regresi berganda wajib digunakan **$R^2$ Terkoreksi (*Adjusted $R^2$*)** yang memberikan penalti terhadap penambahan jumlah parameter!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Pendugaan Matriks Regresi 10 Individu:**
+
+* **Kapan Digunakan?** Gunakan **Regresi Linier Berganda OLS** ketika respon $Y$ kontinu dimodelkan oleh $k \ge 2$ prediktor dan tidak terjadi multikolinieritas parah antar-prediktor.
+* **Skenario Kasus**: Mengamati $n = 10$ individu (`data/13_individu_regresi_berganda.csv`) dengan dua peubah prediktor utama $X_1$ dan $X_2$ terhadap respon $Y$, sekaligus membuktikan secara komputasi bahwa hasil fungsi `lm()` identik hingga desimal terakhir dengan rumus aljabar matriks $\mathbf{b} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{Y}$!
+</div>
+
+## Model Matriks Regresi Berganda & Hipotesis Simultan vs Parsial
+
+Dalam notasi matriks untuk $n$ pengamatan dan $p = k + 1$ parameter (termasuk intersep):
+
+$$\mathbf{Y}_{n \times 1} = \mathbf{X}_{n \times p}\boldsymbol{\beta}_{p \times 1} + \boldsymbol{\varepsilon}_{n \times 1}, \qquad \mathbf{b} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{Y}, \qquad \widehat{\text{Cov}}(\mathbf{b}) = \text{KTG} \cdot (\mathbf{X}'\mathbf{X})^{-1}$$
+
+Koefisien Determinasi Terkoreksi (*Adjusted* $R^2$):
+
+$$R^2_{\text{adj}} = 1 - \frac{\text{JK}_{\text{Galat}} / (n - k - 1)}{\text{JK}_{\text{Total}} / (n - 1)} = 1 - \frac{\text{KTG}}{\text{KTT}}$$
+
+**Dua Tahap Pengujian Hipotesis:**
+
+1. **Uji $F$ Simultan (Kelayakan Model Bersama-sama)**:
+   * $H_0 : \beta_1 = \beta_2 = \dots = \beta_k = 0$ (Seluruh peubah bebas secara bersama-sama tidak berpengaruh terhadap $Y$).
+   * $H_1 :$ Minimal ada satu $\beta_j \neq 0$ ($j = 1, \dots, k$).
+2. **Uji-$t$ Parsial (Kontribusi Masing-masing Prediktor)**:
+   * $H_0 : \beta_j = 0$ vs $H_1 : \beta_j \neq 0$ (menguji pengaruh $X_j$ setelah memperhitungkan prediktor lainnya di dalam model).
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r mlr-matriks}
+# Langkah 1: Membaca dataset 10 individu regresi berganda
+df_mlr <- read.csv("../data/13_individu_regresi_berganda.csv")
+df_mlr[, c("Individu", "X1", "X2", "Y")]
+
+# Langkah 2: Estimasi Regresi Linier Berganda menggunakan fungsi lm()
+mod_mlr <- lm(Y ~ X1 + X2, data = df_mlr)
+summary(mod_mlr)
+anova(mod_mlr)
+
+# Langkah 3: Pembuktian Aljabar Matriks OLS b = (X'X)^(-1) X'Y
+X_mat   <- as.matrix(cbind(Intersep = 1, df_mlr[, c("X1", "X2")])) # Matriks desain 10 x 3
+Y_vec   <- as.matrix(df_mlr$Y)                                     # Vektor respon 10 x 1
+
+XtX     <- t(X_mat) %*% X_mat       # Matriks X'X berukuran 3 x 3
+XtX_inv <- solve(XtX)               # Matriks kebalikan (X'X)^(-1)
+XtY     <- t(X_mat) %*% Y_vec       # Vektor X'Y berukuran 3 x 1
+b_mat   <- XtX_inv %*% XtY          # Vektor penduga OLS b
+
+# Menghitung Galat Baku (Std. Error) dari akar elemen diagonal matriks KTG * (X'X)^(-1)
+ktg_mlr <- sum((Y_vec - X_mat %*% b_mat)^2) / (nrow(X_mat) - ncol(X_mat))
+se_mat  <- sqrt(diag(ktg_mlr * XtX_inv))
+
+# Membandingkan hasil perhitungan matriks manual vs fungsi lm()
+round(cbind(b_Matriks  = as.vector(b_mat),
+            b_lm       = coef(mod_mlr),
+            SE_Matriks = se_mat,
+            SE_lm      = coef(summary(mod_mlr))[, "Std. Error"]), 5)
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `summary(mod_mlr)` & Aljabar Matriks:**
+
+1. **Bukti Identitas Matriks**: Kolom `b_Matriks` dan `SE_Matriks` menghasilkan angka yang **100% identik** dengan `lm()`, yakni $\hat{Y} = 17,5771 + 1,7287 X_1 + 2,1366 X_2$.
+2. **Uji $F$ Simultan (Baris paling bawah `summary`)**:
+   * **`F-statistic: 1.307e+04 on 2 and 7 DF, p-value: 3.137e-13`** ($< 0,001$) $\rightarrow$ Tolak $H_0$ simultan: $X_1$ dan $X_2$ secara bersama-sama sangat nyata menjelaskan respon $Y$ dengan **`Adjusted R-squared = 0.9997`** ($99,97\%$).
+3. **Uji-$t$ Parsial (Tabel `Coefficients`)**:
+   * **`X1`**: `b1 = 1.7287`, `t value = 28.88`, `Pr(>|t|) = 1.54e-08 ***` $\rightarrow$ Jika $X_2$ konstan, kenaikan 1 satuan $X_1$ meningkatkan $Y$ sebesar $1,7287$ satuan.
+   * **`X2`**: `b2 = 2.1366`, `t value = 26.29`, `Pr(>|t|) = 2.95e-08 ***` $\rightarrow$ Jika $X_1$ konstan, kenaikan 1 satuan $X_2$ meningkatkan $Y$ sebesar $2,1366$ satuan.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Analisis regresi linier berganda menghasilkan persamaan dugaan $\hat{Y} = 17,5771 + 1,7287 X_1 + 2,1366 X_2$ yang layak secara simultan ($F_{\text{hitung}} = 13.070$; $p = 3,14 \times 10^{-13}$; $R^2_{\text{adj}} = 99,97\%$), di mana baik peubah $X_1$ ($t = 28,88$; $p = 1,54 \times 10^{-8}$) maupun $X_2$ ($t = 26,29$; $p = 2,95 \times 10^{-8}$) berpengaruh positif sangat nyata secara parsial terhadap respon $Y$."*
+</div>
+
+---
+
+# Analisis 6.3: Regresi Logistik Biner (Untuk Respon $Y$ Kategorik Biner)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Mengapa Respon Biner (`0` dan `1`) Tidak Boleh Dianalisis dengan OLS `lm()`?**
+
+Apabila respon penelitian berupa kejadian dikotomis/biner seperti **Mati (`1`) vs Hidup (`0`)** atau **Terserang Penyakit (`1`) vs Sehat (`0`)**, penggunaan regresi linier biasa `lm()` akan menghasilkan dugaan peluang yang **bisa tembus di bawah $0$ atau melebihi $1$** serta melanggar asumsi kehomogenan ragam!
+
+**Regresi Logistik Biner** memodelkan logaritma dari rasio kecenderungan (**logit**) sehingga kurva dugaan peluang $\hat{\pi}(X) = P(Y = 1 \mid X)$ selalu berbentuk **huruf S (*sigmoid*) yang terikat rapi di antara $0$ dan $1$**.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: *Bioassay* Toksikologi Pestisida Nabati:**
+
+* **Kapan Digunakan?** Gunakan **Regresi Logistik Biner (`glm(..., family = binomial)` )** ketika peubah respon $Y$ hanya memiliki **dua kategori (`0` dan `1`)**.
+* **Skenario Penelitian**: Pengujian toksisitas ekstrak pestisida nabati pada berbagai tingkat **Dosis ($X$, ml/L)** terhadap status **Kematian Serangga Hama ($Y$: `1` = Mati, `0` = Hidup)** pada $n = 15$ unit pengamatan untuk menduga besarnya *Odds Ratio* dan konsentrasi mematikan separuh populasi ($\text{LD}_{50}$).
+</div>
+
+## Model Logit, Rumus Peluang Sigmoid, *Odds Ratio*, & Hipotesis
+
+Misalkan $\pi(X) = P(Y = 1 \mid X)$ adalah peluang kematian hama pada dosis $X$. Transformasi logit dan fungsi peluang baliknya adalah:
+
+$$\text{logit}[\pi(X)] = \ln\!\left(\frac{\pi(X)}{1 - \pi(X)}\right) = \beta_0 + \beta_1 X \quad \Longleftrightarrow \quad \pi(X) = \frac{e^{\beta_0 + \beta_1 X}}{1 + e^{\beta_0 + \beta_1 X}}$$
+
+Ukuran interpretasi utama adalah **Rasio Kecenderungan (*Odds Ratio* / OR)** dan **Dosis Letal Tengah ($\text{LD}_{50}$, saat $\pi = 0,50 \implies \text{logit} = 0$)**:
+
+$$\text{OR} = e^{\beta_1}, \qquad \widehat{\text{LD}}_{50} = -\frac{b_0}{b_1}$$
+
+**Pasangan Hipotesis (Uji Wald $Z$ & Penurunan Devians):**
+
+* $H_0 : \beta_1 = 0$ ($\text{OR} = 1$, dosis pestisida tidak memengaruhi peluang kematian serangga).
+* $H_1 : \beta_1 \neq 0$ ($\text{OR} \neq 1$, dosis pestisida memengaruhi peluang kematian serangga).
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r regresi-logistik, fig.cap="Kurva sigmoid peluang kematian serangga hasil Regresi Logistik Biner beserta titik penduga LD50."}
+# Langkah 1: Menyusun data bioassay Dosis Pestisida (ml/L) vs Kematian Biner (0/1)
+df_log <- data.frame(
+  Dosis_Pestisida = c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 3, 5, 9, 13, 17),
+  Mati_Biner      = c(0, 0, 0, 0,  1,  0,  1,  1,  1,  1, 0, 0, 1,  1,  1)
+)
+
+# Langkah 2: Mengestimasi Generalized Linear Model (GLM) keluarga Binomial Link Logit
+mod_logistik <- glm(Mati_Biner ~ Dosis_Pestisida, data = df_log,
+                    family = binomial(link = "logit"))
+summary(mod_logistik)
+
+# Uji Nisbah Kemungkinan (Likelihood Ratio Test) penurunan Devians model
+anova(mod_logistik, test = "Chisq")
+
+# Langkah 3: Menghitung Odds Ratio exp(b) dan titik Dosis Letal 50% (LD50)
+round(exp(coef(mod_logistik)), 4)
+ld50 <- -coef(mod_logistik)[1] / coef(mod_logistik)[2]
+cat(sprintf("Dugaan LD50 = %.2f ml/L\n", ld50))
+
+# Langkah 4: Visualisasi Kurva Sigmoid Peluang Kematian P(Y = 1 | X)
+dosis_grid   <- seq(0, 22, length.out = 200)
+peluang_duga <- predict(mod_logistik, newdata = data.frame(Dosis_Pestisida = dosis_grid),
+                        type = "response")
+
+plot(df_log$Dosis_Pestisida, df_log$Mati_Biner,
+     pch = 19, col = "#2c3e50", cex = 1.3,
+     xlab = "Dosis Pestisida Nabati (ml/L)", ylab = "Peluang Kematian Hama P(Y = 1)",
+     main = "Kurva Sigmoid Regresi Logistik Biner & Titik LD50")
+lines(dosis_grid, peluang_duga, col = "#e74c3c", lwd = 2.5)
+abline(h = 0.50, v = ld50, col = "#2980b9", lty = 2)
+text(ld50 + 3.2, 0.15, sprintf("LD50 = %.2f ml/L", ld50), col = "#2980b9", font = 2)
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `glm(..., family = binomial)`:**
+
+1. **Persamaan Logit & Penurunan Devians**:
+   * Diperoleh $\text{logit}(\hat{\pi}) = -6,1321 + 0,6338 X$.
+   * Penurunan devians dari `Null deviance = 20.728` menjadi `Residual deviance = 7.812` sebesar $\Delta G^2 = 12,916$ ($\text{db} = 1$) pada uji *Likelihood Ratio* (`anova(..., test = "Chisq")`) sangat nyata (`p = 0.000326 ***` — uji *Likelihood Ratio* lebih akurat pada ukuran sampel kecil daripada pendekatan asimtotik Wald `z = 1.939, p = 0.0525`).
+2. **Interpretasi *Odds Ratio* (`exp(b1) = 1.8847`) & $\text{LD}_{50}$**:
+   * Setiap peningkatan dosis pestisida sebesar **$1\text{ ml/L}$** melipatgandakan kecenderungan (*odds*) kematian serangga sebesar **`1.8847` kali lipat** (meningkat $88,47\%$).
+   * Konsentrasi yang diperkirakan mematikan $50\%$ populasi serangga uji adalah **`LD50 = 9.68 ml/L`**.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan pemodelan regresi logistik biner, peningkatan dosis pestisida nabati secara nyata meningkatkan peluang kematian serangga hama ($\Delta G^2 = 12,92$; $p = 0,00033$) dengan persamaan $\text{logit}(\hat{\pi}) = -6,1321 + 0,6338 X$ dan nilai Odds Ratio sebesar $1,8847$, serta estimasi konsentrasi $\text{LD}_{50}$ sebesar $9,68\text{ ml/L}$."*
+</div>
+
+---
+
+# Analisis 6.4: Diagnostik Visual, Uji Normalitas Sisaan (Lilliefors & Khi-Kuadrat), & Uji Kehomogenan Ragam (Bartlett & $F_{\max}$ Hartley)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Memeriksa Keabsahan Asumsi Klasik Galat ($\varepsilon_i \overset{\text{iid}}{\sim} N(0, \sigma^2)$):**
+
+Seluruh uji $F$ dan uji-$t$ pada ANOVA maupun Regresi berdiri di atas tiga tiang asumsi sisaan ($e_i = Y_i - \hat{Y}_i$):
+1. **Pemeriksaan Visual (`boxplot` & Plot $e_i$ vs $\hat{Y}_i$)**: Memastikan tidak ada pencilan ekstrem dan titik-titik sisaan menyebar acak membentuk pita horizontal di sekitar nol (tidak membentuk **corong melebar = heteroskedastisitas** atau **parabola melengkung = salah spesifikasi model**).
+2. **Asumsi Kenormalan Sisaan**: Diuji secara formal dengan **Uji Lilliefors** (perbaikan Kolmogorov-Smirnov ketika $\mu$ dan $\sigma^2$ diduga dari sampel) dan **Uji Khi-Kuadrat *Goodness-of-Fit* Pearson**.
+3. **Asumsi Kehomogenan Ragam (*Homoscedasticity*)**: Pada data berkelompok/perlakuan, diuji dengan **Uji Bartlett** (berbasis logaritma ragam gabungan) dan **Uji $F_{\max}$ Hartley** (rasio ragam terbesar terhadap ragam terkecil).
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Kriteria Keputusan Pengujian Asumsi:**
+
+Berbeda dari uji pengaruh perlakuan/regresi di mana kita sering mengharapkan tolak $H_0$, **pada pengujian asumsi normalitas dan kehomogenan ragam, asumsi justru TERPENUHI apabila `p-value > 0.05` (Gagal Menolak $H_0$)**! Kita akan memeriksa kenormalan sisaan model regresi berganda (`mod_mlr`) serta kehomogenan ragam antar-perlakuan pada dataset *Red Clover* (`df_clover`).
+</div>
+
+## Rumus Statistik Uji Normalitas & Kehomogenan Ragam + Hipotesis
+
+1. **Uji Normalitas Lilliefors & Khi-Kuadrat**:
+   * $H_0 :$ Sisaan menyebar mengikuti sebaran Normal $N(0, \sigma^2)$ vs $H_1 :$ Sisaan tidak menyebar Normal.
+   * Statistik Lilliefors: $D = \max_i |F^*(z_i) - S_n(z_i)|$, dengan $z_i = (e_i - \bar{e})/s_e$.
+2. **Uji Kehomogenan Ragam Bartlett & $F_{\max}$ Hartley**:
+   * $H_0 : \sigma_1^2 = \sigma_2^2 = \dots = \sigma_t^2$ (Ragam galat antar-perlakuan homogen) vs $H_1 :$ minimal ada satu $\sigma_i^2$ yang berbeda.
+   * Statistik **Uji $F_{\max}$ Hartley** (untuk ulangan sama $r$):
+     $$F_{\max} = \frac{\max(s_1^2, s_2^2, \dots, s_t^2)}{\min(s_1^2, s_2^2, \dots, s_t^2)}$$
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r diagnostik-asumsi, fig.width=9.5, fig.height=4.5, fig.cap="Diagnostik visual sisaan regresi berganda: Boxplot sisaan simetris tanpa pencilan (kiri) dan sebaran acak sisaan terhadap nilai dugaan (kanan)."}
+library(nortest)
+
+# mengekstrak vektor sisaan (e_i) dan nilai dugaan (Y_hat) dari model regresi berganda
+sisaan <- residuals(mod_mlr)
+y_duga <- fitted(mod_mlr)
+
+# Langkah 1: Diagnostik Visual Sisaan (Boxplot & Plot Sisaan vs Y_hat)
+par(mfrow = c(1, 2))
+boxplot(sisaan, col = "#aed6f1", border = "#1b4f72",
+        main = "Boxplot Sisaan Regresi", ylab = "Sisaan (e_i)")
+abline(h = 0, col = "#e74c3c", lty = 2)
+
+plot(y_duga, sisaan, pch = 19, col = "#2c3e50", cex = 1.3,
+     xlab = "Nilai Dugaan (Y_hat)", ylab = "Sisaan (e_i)",
+     main = "Plot Sisaan vs Nilai Dugaan")
+abline(h = 0, col = "#e74c3c", lty = 2, lwd = 2)
+par(mfrow = c(1, 1))
+
+# Langkah 2: Uji Formal Kenormalan Sisaan (Lilliefors & Khi-Kuadrat Pearson)
+lillie.test(sisaan)
+pearson.test(sisaan)
+
+# Langkah 3: Uji Formal Kehomogenan Ragam Antar-Perlakuan (Bartlett & F-Max Hartley)
+df_clover <- read.csv("../data/02_red_clover_ral.csv")
+df_clover$Perlakuan <- factor(df_clover$Perlakuan)
+
+bartlett.test(Kadar_N ~ Perlakuan, data = df_clover)
+
+# Menghitung nilai statistik F-Max Hartley (s2_maksimum / s2_minimum)
+ragam_per_grup <- tapply(df_clover$Kadar_N, df_clover$Perlakuan, var)
+print(round(ragam_per_grup, 4))
+
+F_max_hartley <- max(ragam_per_grup) / min(ragam_per_grup)
+cat(sprintf("Nilai Statistik F-Max Hartley = %.4f / %.4f = %.4f\n",
+            max(ragam_per_grup), min(ragam_per_grup), F_max_hartley))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Hasil Diagnostik Asumsi:**
+
+1. **Visual Sisaan**: Boxplot tampak simetris terhadap garis median mendekati nol tanpa titik pencilan di luar kumis (*whisker*), dan plot `sisaan vs y_duga` menyebar acak di atas dan bawah garis horizontal `0` tanpa pola corong ataupun pola lengkung.
+2. **Uji Normalitas Sisaan**:
+   * **Uji Lilliefors**: `D = 0.15138`, **`p-value = 0.7433 > 0.05`** $\rightarrow$ Gagal menolak $H_0$ (**Asumsi Normalitas Terpenuhi!**).
+   * **Uji Khi-Kuadrat Pearson**: `P = 5.6`, **`p-value = 0.1328 > 0.05`** $\rightarrow$ Konsisten menyatakan **Asumsi Normalitas Terpenuhi**.
+3. **Uji Kehomogenan Ragam**:
+   * **Uji Bartlett**: `Bartlett's K-squared = 0.13872`, `df = 5`, **`p-value = 0.9996 > 0.05`** $\rightarrow$ **Ragam antar-perlakuan sangat homogen!**
+   * **Uji $F_{\max}$ Hartley**: Rasio ragam terbesar (`3DOK1 = 5.30`) terhadap terkecil (`3DOK13 = 3.74`) adalah **`F_max = 1.4171`**, jauh di bawah nilai kritis tabel Hartley $F_{\max(0,05;\; t=6,\; \nu=4)} = 29,5$, mengonfirmasi kehomogenan ragam terpenuhi sempurna!
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Pemeriksaan diagnostik menunjukkan bahwa asumsi kenormalan sisaan terpenuhi berdasarkan Uji Lilliefors ($D = 0,1514$; $p = 0,7433 > 0,05$) dan Uji Khi-Kuadrat ($P = 5,60$; $p = 0,1328 > 0,05$), serta asumsi kehomogenan ragam terpenuhi berdasarkan Uji Bartlett ($\chi^2 = 0,1387$; $p = 0,9996 > 0,05$) dan Uji $F_{\max}$ Hartley ($F_{\max} = 1,4171 < 29,5$)."*
+</div>
+
+---
+
+# Analisis 6.5: Deteksi & Penanganan Multikolinieritas + Seleksi Peubah (VIF, Stepwise, Ridge, PCR, & PLS)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Bahaya Multikolinieritas & Empat Strategi Penanganannya:**
+
+**Multikolinieritas** terjadi apabila dua atau lebih peubah bebas ($X$) di dalam regresi berganda memiliki hubungan linier yang sangat kuat satu sama lain ($r_{X_i X_j} \to \pm 1$). Gejala klasiknya adalah **paradoks regresi**: nilai $R^2$ dan uji $F$ simultan tampak sangat nyata, namun matriks $(\mathbf{X}'\mathbf{X})$ nyaris singular sehingga **galat baku (`Std. Error`) koefisien membengkak raksasa**, membuat uji-$t$ parsial menjadi tidak nyata atau tanda koefisien menjadi salah arah!
+
+Jika terdeteksi **$\text{VIF}_j > 10$**, pilih strategi penanganan sesuai tujuan riset:
+1. **Seleksi Peubah *Stepwise* (`step()`)**: Membuang peubah yang mubazir/kolinier dan derau (*noise*) secara bertahap untuk meminimumkan kriteria informasi **AIC** (cocok jika kita ingin mencari model paling ringkas/parsimoni).
+2. **Regresi Gulud (*Ridge Regression*, `lm.ridge` / `glmnet`)**: Mempertahankan seluruh peubah $X$, tetapi menambahkan tetapan penalti kecil $\lambda > 0$ pada diagonal matriks $\mathbf{X}'\mathbf{X}$ untuk memangkas ragam penduga secara drastis dengan mengizinkan sedikit bias.
+3. **Principal Component Regression / PCR (`pls::pcr`)**: Merangkum peubah-peubah $X$ yang kolinier menjadi beberapa **Komponen Utama (*Principal Components*)** yang dijamin **100% saling ortogonal ($\text{VIF} = 1$)** berdasarkan keragaman matriks $\mathbf{X}$.
+4. **Partial Least Squares / PLS (`pls::plsr`)**: Mirip PCR, tetapi dalam membentuk komponen laten yang saling ortogonal, PLS **memaksimumkan keragaman $\mathbf{X}$ sekaligus kovariansinya dengan respon $\mathbf{Y}$** sehingga umumnya membutuhkan lebih sedikit komponen daripada PCR!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Konteks Kasus Prediktor Kolinier & Prediktor *Noise* (`data/13_individu_regresi_berganda.csv`):**
+
+Pada dataset `df_mlr`, selain prediktor sejati `X1` dan `X2`, terdapat peubah `X3_Kolinier` (yang berkorelasi ekstrem dengan `X1` dan `X2`, misalnya luas daun vs bobot segar tajuk tanaman) serta `X4_Noise` (peubah acak tidak relevan). Kita akan mendeteksi kerusakan yang ditimbulkannya dengan **VIF**, lalu membandingkan pemulihan model menggunakan **Stepwise**, **Ridge (`MASS::lm.ridge` & `glmnet`)**, **PCR**, dan **PLS**!
+</div>
+
+## Rumus Matematis VIF, AIC Stepwise, & Penduga Ridge
+
+1. **Variance Inflation Factor ($\text{VIF}_j$)**:
+   $$\text{VIF}_j = \frac{1}{1 - R_j^2} \qquad (\text{Multikolinieritas serius apabila } \text{VIF}_j > 10)$$
+   di mana $R_j^2$ adalah koefisien determinasi saat meregresikan $X_j$ terhadap seluruh prediktor $X$ lainnya.
+2. **Kriteria *Akaike Information Criterion* (AIC) pada Stepwise**:
+   $$\text{AIC} = n \ln\!\left(\frac{\text{JK}_{\text{Galat}}}{n}\right) + 2p \qquad (\text{semakin kecil/negatif nilai AIC, semakin baik model})$$
+3. **Penduga Regresi Gulud (*Ridge Regression*)**:
+   $$\mathbf{b}_{\text{Ridge}}(\lambda) = (\mathbf{X}'\mathbf{X} + \lambda \mathbf{I})^{-1}\mathbf{X}'\mathbf{Y}, \qquad \lambda \ge 0$$
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r multikolinieritas-stepwise-ridge-pcr-pls, fig.width=10, fig.height=4.6, fig.cap="Jejak Koefisien Regresi Gulud (Ridge Trace Plot, kiri) yang menstabilkan koefisien saat lambda naik dari 0, serta kurva galat validasi silang RMSEP pada PLS (kanan)."}
+library(car)
+library(MASS)
+library(glmnet)
+library(pls)
+
+# Langkah 1: Mengestimasi Model Penuh yang tercemar X3_Kolinier dan X4_Noise
+mod_penuh <- lm(Y ~ X1 + X2 + X3_Kolinier + X4_Noise, data = df_mlr)
+summary(mod_penuh)
+
+# Langkah 2: Deteksi Multikolinieritas menggunakan Matriks Korelasi & VIF
+round(cor(df_mlr[, c("X1", "X2", "X3_Kolinier", "X4_Noise")]), 4)
+round(vif(mod_penuh), 2)
+
+# Langkah 3: Seleksi Peubah Bebas dengan Regresi Stepwise (dua arah: maju & mundur)
+mod_stepwise <- step(mod_penuh, direction = "both", trace = 1)
+summary(mod_stepwise)
+
+# Langkah 4A: Penanganan Multikolinieritas dengan Ridge Regression (MASS::lm.ridge)
+mod_ridge <- lm.ridge(Y ~ X1 + X2 + X3_Kolinier, data = df_mlr, lambda = seq(0, 1, 0.1))
+select(mod_ridge)           # Kriteria pemilihan tetapan bias lambda (HKB, L-W, GCV)
+round(coef(mod_ridge), 4)   # Perubahan koefisien dari OLS (lambda=0) ke Ridge (lambda>0)
+
+# Langkah 4B: Alternatif modern Ridge Regression dengan validasi silang glmnet (alpha = 0)
+set.seed(512)
+X_ridge  <- as.matrix(df_mlr[, c("X1", "X2", "X3_Kolinier")])
+cv_ridge <- cv.glmnet(X_ridge, df_mlr$Y, alpha = 0, nfolds = 5, grouped = FALSE)
+round(as.matrix(coef(cv_ridge, s = "lambda.min")), 4)
+
+# Langkah 5: Principal Component Regression (PCR) dengan validasi silang Leave-One-Out (LOO)
+mod_pcr <- pcr(Y ~ X1 + X2 + X3_Kolinier, data = df_mlr, scale = TRUE, validation = "LOO")
+summary(mod_pcr)
+
+# Langkah 6: Partial Least Squares Regression (PLS) dengan validasi silang LOO
+mod_pls <- plsr(Y ~ X1 + X2 + X3_Kolinier, data = df_mlr, scale = TRUE, validation = "LOO")
+summary(mod_pls)
+
+# Visualisasi Ridge Trace Plot & Kurva Validasi RMSEP PLS
+par(mfrow = c(1, 2))
+matplot(mod_ridge$lambda, t(mod_ridge$coef), type = "l", lwd = 2.2, lty = 1,
+        col = c("#2980b9", "#27ae60", "#e74c3c"),
+        xlab = "Tetapan Penalti Bias (lambda)", ylab = "Koefisien Terbakukan",
+        main = "Ridge Trace Plot (Stabilisasi Koefisien)")
+legend("topright", legend = c("X1", "X2", "X3_Kolinier"),
+       col = c("#2980b9", "#27ae60", "#e74c3c"), lwd = 2.2, bty = "n")
+
+validationplot(mod_pls, val.type = "RMSEP", main = "Validasi Silang RMSEP pada PLS")
+par(mfrow = c(1, 1))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Lengkap Membaca Diagnostik Multikolinieritas & Model Pemulihan:**
+
+1. **Bukti Kerusakan pada `mod_penuh` & Deteksi `vif()`**:
+   * Matriks korelasi mengungkap korelasi ekstrem antara `X1` dan `X3_Kolinier` sebesar **`0.9962`** ($r = 0,9962$) serta dengan `X2` sebesar **`0.9635`** ($r = 0,9635$).
+   * Akibatnya, nilai **`vif(mod_penuh)` meledak jauh melampaui ambang 10**: `X3_Kolinier = 551.47`, `X1 = 345.03`, dan `X2 = 37.16`! Bandingkan galat baku `X1` yang membengkak lebih dari 7 kali lipat (dari `0.0599` pada model bersih menjadi `0.4419` pada `mod_penuh`).
+2. **Keberhasilan Seleksi `step()` (Stepwise)**:
+   * Dimulai dari `AIC = -21.46`, algoritma *Stepwise* pada Langkah 1 membuang `X3_Kolinier` (`AIC` turun membaik ke `-23.45`), lalu pada Langkah 2 membuang `X4_Noise` (`AIC` mencapai titik terbaik **`-25.44`**), sehingga **berhasil memulihkan tepat model sejati `Y ~ X1 + X2`**!
+3. **Stabilisasi Koefisien pada Ridge Regression (`lm.ridge` & `cv.glmnet`)**:
+   * Perhatikan *Ridge Trace Plot* (grafik kiri): pada $\lambda = 0$ (OLS), koefisien sangat labil (`X1 = 1.7097`, `X3_Kolinier = 0.0103`). Begitu diberikan penalti kecil $\lambda = 0,1\text{--}0,3$ (maupun pada `cv.glmnet`), ketiga kurva koefisien langsung tenang dan stabil berbagi bobot informasi (`X1 ≈ 1.00`, `X2 ≈ 1.57`, `X3_Kolinier ≈ 0.44`).
+4. **Penentuan Jumlah Komponen Optimum pada `PCR` dan `PLS`**:
+   * Lihat baris `VALIDATION: RMSEP (CV)` dan grafik kanan: galat prediksi validasi silang turun tajam dari `14.1` (intersep) ke `1 comps` (`0.48`), mencapai **titik minimum terbaik pada `2 comps`** (**`RMSEP = 0.3830`** pada PCR dan **`0.3804`** pada PLS, menjelaskan **`99.96%`** keragaman $X$ maupun $Y$), sebelum naik kembali pada `3 comps` (`0.4295`) akibat masuknya komponen multikolinieritas! Ini membuktikan **2 komponen ortogonal** sudah merangkum seluruh informasi sejati data tanpa gangguan multikolinieritas.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Pemeriksaan multikolinieritas pada model penuh mendeteksi nilai VIF sangat tinggi pada peubah `X3_Kolinier` ($\text{VIF} = 551,47 > 10$) dan `X1` ($\text{VIF} = 345,03 > 10$). Seleksi peubah metode Stepwise berbasis AIC berhasil mengeliminasi `X3_Kolinier` dan `X4_Noise` sehingga memulihkan model parsimoni terbaik $\hat{Y} = 17,58 + 1,73 X_1 + 2,14 X_2$ ($\text{AIC} = -25,44$; $R^2_{\text{adj}} = 99,97\%$). Apabila seluruh prediktor kolinier tetap dipertahankan, metode Regresi Gulud (Ridge), PCR, dan PLS dengan 2 komponen laten terbukti efektif menstabilkan penduga parameter dan menekan galat prediksi validasi silang hingga $\text{RMSEP} = 0,3804$."*
+</div>

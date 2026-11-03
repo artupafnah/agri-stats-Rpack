@@ -1,0 +1,450 @@
+---
+title: "Modul 03: Percobaan Faktorial (Multifaktor)"
+output:
+  rmdformats::robobook:
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: show
+    toc_depth: 3
+    use_bookdown: true
+    css: "../assets/style_robobook.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 5,
+  comment = "#>"
+)
+```
+
+# Konsep Dasar Percobaan Faktorial
+
+<div class="kotak-konsep">
+**Meluruskan Kesalahpahaman Umum — "Faktorial Bukanlah Rancangan Lingkungan!"**
+
+Dalam terminologi statistika percobaan, **Faktorial** adalah **rancangan susunan perlakuan** (*treatment design*) yang mengombinasikan seluruh taraf dari dua faktor atau lebih ($A \times B$), **bukan** rancangan lingkungan! Oleh sebab itu, penulisan metode penelitian yang benar harus menyebutkan rancangan lingkungannya sekaligus, yaitu:
+
+* **Percobaan Faktorial dalam RAL** (jika lingkungan homogen, misal inkubator/laboratorium).
+* **Percobaan Faktorial dalam RAK** (jika ada satu arah gradasi lingkungan/blok).
+* **Percobaan Faktorial dalam RBSL** (jika ada dua arah gradasi lingkungan tegak lurus: Baris dan Kolom).
+</div>
+
+Tiga keunggulan utama meneliti dua faktor secara faktorial dibandingkan melakukan dua percobaan faktor tunggal secara terpisah adalah:
+
+1. **Mampu Menguji Pengaruh Interaksi ($A \times B$)**: Mengetahui apakah faktor $A$ dan faktor $B$ bekerja saling bersinergi, saling menghambat (antagonis), atau bekerja bebas (*independen*).
+2. **Efisiensi Satuan Percobaan (*Hidden Replication*)**: Jika tidak ada interaksi, setiap pengamatan memberikan informasi ganda untuk menduga pengaruh utama faktor $A$ maupun faktor $B$ sekaligus.
+3. **Keluasan Kesimpulan (*Wider Inductive Basis*)**: Rekomendasi faktor $A$ telah teruji melintasi berbagai kondisi taraf faktor $B$.
+
+| Istilah Pengaruh dalam Faktorial | Definisi Intuitif | Kapan Menjadi Fokus Utama Kesimpulan? |
+| :--- | :--- | :--- |
+| **Pengaruh Sederhana (*Simple Effect*)** | Pengaruh perubahan taraf Faktor $A$ **pada satu taraf Faktor $B$ tertentu saja**. | **Wajib diuji** apabila **Interaksi $A \times B$ NYATA** (`Pr(>F) < 0.05`). |
+| **Pengaruh Utama (*Main Effect*)** | Rata-rata pengaruh perubahan taraf Faktor $A$ yang dirata-ratakan melintasi seluruh taraf Faktor $B$. | Cukup diuji secara mandiri apabila **Interaksi $A \times B$ TIDAK NYATA** (`Pr(>F) >= 0.05`). |
+| **Pengaruh Interaksi (*Interaction*)** | Kegagalan taraf-taraf Faktor $A$ untuk memberikan pola respon yang sama pada berbagai taraf Faktor $B$ (selisih antara pengaruh sederhana). | **Selalu diperiksa PERTAMA KALI** pada tabel ANOVA Faktorial! |
+
+---
+
+# Analisis 3.1: Pengacakan Faktorial dalam RAL, RAK, dan RBSL
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Pengacakan Setara Seluruh Kombinasi $a \times b$:**
+
+Ciri khas percobaan faktorial biasa (yang membedakannya dari *Split-Plot* pada Modul 04) adalah **seluruh $t = a \times b$ kombinasi perlakuan diperlakukan setara dan diacak sekaligus dalam satu tahap** sesuai rancangan lingkungannya:
+* Pada **Faktorial RAL**: ke-$ab$ kombinasi diacak bebas ke seluruh $abr$ satuan percobaan.
+* Pada **Faktorial RAK**: setiap blok memuat lengkap seluruh $ab$ kombinasi yang diacak di dalam blok tersebut.
+* Pada **Faktorial RBSL**: ke-$ab$ kombinasi ditempatkan ke dalam bujur sangkar berukuran $(ab) \times (ab)$ sehingga setiap kombinasi muncul tepat satu kali pada setiap Baris dan setiap Kolom.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Pengacakan Denah Faktorial:**
+
+1. **Faktorial $3 \times 4$ dalam RAL & RAK ($r = 3$)**: Menempatkan $3 \times 4 = 12$ kombinasi perlakuan ke dalam 36 pot rumah kaca (RAL) atau 3 blok sawah yang masing-masing terdiri atas 12 petak (RAK).
+2. **Faktorial $2 \times 2$ dalam RBSL ($4 \times 4 = 16$ petak)**: Menempatkan $2 \times 2 = 4$ kombinasi perlakuan pada kebun percobaan yang memiliki gradasi ganda (saluran irigasi di arah Utara–Selatan sebagai Baris dan kemiringan lereng di arah Timur–Barat sebagai Kolom).
+</div>
+
+## Rumus Kombinasi Satuan Percobaan & Derajat Bebas Galat
+
+Untuk Faktor $A$ ($a$ taraf) dan Faktor $B$ ($b$ taraf) sehingga terdapat $t = ab$ kombinasi perlakuan:
+
+$$\text{db}_{\text{Galat (Faktorial RAL)}} = ab(r - 1), \qquad \text{db}_{\text{Galat (Faktorial RAK)}} = (ab - 1)(r - 1)$$
+
+$$\text{db}_{\text{Galat (Faktorial RBSL)}} = (ab - 1)(ab - 2)$$
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r pengacakan-faktorial}
+library(agricolae)
+
+# 1. Pengacakan Faktorial 3 x 4 dalam RAL (CRD) dengan 3 ulangan (total 36 satuan)
+fak_ral <- design.ab(trt = c(3, 4), r = 3, design = "crd", seed = 512, serie = 2)
+head(fak_ral$book, 10)
+
+# 2. Pengacakan Faktorial 3 x 4 dalam RAK (RCBD) dengan 3 blok (12 petak per blok)
+fak_rak <- design.ab(trt = c(3, 4), r = 3, design = "rcbd", seed = 512, serie = 2)
+head(fak_rak$book, 12) # Seluruh 12 kombinasi A x B muncul lengkap di Blok 1 (petak 101-112)
+
+# 3. Pengacakan Faktorial 2 x 2 dalam RBSL / Latin Square (ukuran 4 Baris x 4 Kolom = 16 petak)
+fak_rbsl <- design.ab(trt = c(2, 2), design = "lsd", seed = 512, serie = 2)
+fak_rbsl$book
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Buku Lapangan `design.ab()`:**
+
+* Pada **Faktorial RAL (`fak_ral$book`)**, kolom `A` (`1..3`) dan `B` (`1..4`) muncul secara acak lintas seluruh nomor pot `101..136`, dengan kolom `r` mencatat urutan kemunculan ulangan ke-1 s.d. ke-3 bagi tiap kombinasi.
+* Pada **Faktorial RAK (`fak_rak$book`)**, perhatikan petak `101` s.d. `112` yang semuanya berada pada `block = 1`: ke-12 pasangan kombinasi `(A, B)` dari `(1,1)` hingga `(3,4)` muncul tepat satu kali secara acak di dalam Blok 1 sebelum berlanjut ke Blok 2 (`201..212`).
+* Pada **Faktorial RBSL (`fak_rbsl$book`)**, terdapat tepat $4 \times 4 = 16$ petak (`row = 1..4`, `col = 1..4`), di mana keempat kombinasi `(1,1), (1,2), (2,1), (2,2)` muncul tepat sekali di setiap baris maupun setiap kolom!
+</div>
+
+---
+
+# Analisis 3.2: ANOVA Faktorial 2 Faktor dalam RAL (Faktorial RAL)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Dekomposisi JK Perlakuan Kombinasi pada Faktorial RAL:**
+
+Seandainya $ab$ kombinasi dipandang sebagai perlakuan tunggal RAL biasa, kita memiliki $\text{JK}_{\text{Kombinasi } AB}$ berderajat bebas $(ab - 1)$. Pada analisis faktorial, $\text{JK}_{\text{Kombinasi } AB}$ tersebut dipecah secara ortogonal menjadi tiga sumber keragaman yang bermakna biologis:
+$$\text{JK}_{\text{Kombinasi } AB}\; (ab - 1) = \text{JK}_A\; (a - 1) + \text{JK}_B\; (b - 1) + \text{JK}_{AB}\; (a - 1)(b - 1)$$
+Ketiga sumber keragaman tersebut diuji terhadap satu penyebut yang sama, yaitu **Kuadrat Tengah Galat ($\text{KTG}$)**.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus — Fumigasi Benih Tomat di Laboratorium:**
+
+* **Kapan Digunakan?** Gunakan **Faktorial RAL** ketika meneliti kombinasi dua faktor perlakuan pada media dan ruang percobaan yang **homogen penuh** (seperti cawan petri di germinator/inkubator laboratorium benih).
+* **Skenario Penelitian**: Seorang peneliti teknologi benih menguji pengaruh **5 taraf Dosis Fumigan** ($0, 16, 32, 48, \text{ dan } 64\text{ g/m}^3$) yang dikombinasikan dengan **2 taraf Lama Fumigasi** ($2\text{ jam}$ dan $4\text{ jam}$) terhadap **daya kecambah benih tomat (%)**. Setiap kombinasi dari $5 \times 2 = 10$ perlakuan diulang sebanyak $r = 3$ kali di ruang germinator terkontrol (total $30$ satuan percobaan). Dataset tersimpan pada `data/05_tomat_faktorial_ral.csv`.
+</div>
+
+## Model Linier & Tiga Pasang Hipotesis
+
+Model linier aditif Faktorial 2 Faktor dalam RAL adalah:
+
+$$Y_{ijk} = \mu + \alpha_i + \beta_j + (\alpha\beta)_{ij} + \varepsilon_{ijk}; \quad i = 1, \dots, a; \quad j = 1, \dots, b; \quad k = 1, \dots, r$$
+
+Keterangan simbol:
+
+* $Y_{ijk}$ : Daya kecambah benih tomat (%) pada dosis ke-$i$, lama fumigasi ke-$j$, ulangan ke-$k$.
+* $\mu$ : Nilai tengah umum populasi.
+* $\alpha_i$ : Pengaruh utama Dosis Fumigan ke-$i$ ($a = 5$).
+* $\beta_j$ : Pengaruh utama Lama Fumigasi ke-$j$ ($b = 2$).
+* $(\alpha\beta)_{ij}$ : Pengaruh interaksi antara Dosis ke-$i$ dan Lama Fumigasi ke-$j$.
+* $\varepsilon_{ijk}$ : Pengaruh acak galat percobaan, $\varepsilon_{ijk} \overset{\text{iid}}{\sim} N(0, \sigma^2)$.
+
+**Tiga Pasang Hipotesis (Diperiksa Mulai dari Interaksi!):**
+
+1. **Hipotesis Interaksi ($A \times B$)**:
+   * $H_0 : (\alpha\beta)_{ij} = 0$ untuk seluruh $(i, j)$ (Tidak ada interaksi antara dosis fumigan dan lama fumigasi terhadap daya kecambah benih tomat).
+   * $H_1 :$ Minimal ada satu $(\alpha\beta)_{ij} \neq 0$ (Pengaruh dosis fumigan bergantung pada lama fumigasi).
+2. **Hipotesis Pengaruh Utama Faktor $A$ (Dosis)**: $H_0 : \alpha_1 = \dots = \alpha_5 = 0$ vs $H_1 :$ minimal satu $\alpha_i \neq 0$.
+3. **Hipotesis Pengaruh Utama Faktor $B$ (Lama)**: $H_0 : \beta_1 = \beta_2 = 0$ vs $H_1 : \beta_1 \neq \beta_2$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r faktorial-ral-tomat}
+# Langkah 1: Membaca dataset dan mengubah kedua faktor menjadi 'factor'
+df_tomat <- read.csv("../data/05_tomat_faktorial_ral.csv")
+df_tomat$Dosis <- factor(df_tomat$Dosis, levels = c(0, 16, 32, 48, 64))
+df_tomat$Lama  <- factor(df_tomat$Lama, levels = c(2, 4), labels = c("2_Jam", "4_Jam"))
+
+# Langkah 2: Menyusun tabel rata-rata dwitaraf (Dosis x Lama) beserta rataan marginalnya
+tabel_tomat <- with(df_tomat, tapply(Daya_Kecambah, list(Dosis = Dosis, Lama = Lama), mean))
+addmargins(tabel_tomat, FUN = mean, quiet = TRUE)
+
+# Langkah 3: Menjalankan ANOVA Faktorial RAL
+#            Rumus 'Dosis * Lama' otomatis diperluas oleh R menjadi 'Dosis + Lama + Dosis:Lama'
+model_fak_ral <- aov(Daya_Kecambah ~ Dosis * Lama, data = df_tomat)
+summary(model_fak_ral)
+
+# Langkah 4: Menghitung KTG dan Koefisien Keragaman (KK %)
+ktg_tomat <- summary(model_fak_ral)[[1]]["Residuals", "Mean Sq"]
+kk_tomat  <- sqrt(ktg_tomat) / mean(df_tomat$Daya_Kecambah) * 100
+cat(sprintf("KTG = %.2f | KK = %.2f%%\n", ktg_tomat, kk_tomat))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Tabel ANOVA Faktorial RAL (`summary(model_fak_ral)`):**
+
+1. **Verifikasi Derajat Bebas (`Df`)**: `Dosis` $= 5 - 1 = 4$; `Lama` $= 2 - 1 = 1$; `Dosis:Lama` $= 4 \times 1 = 4$; dan `Residuals` $= 5 \times 2 \times (3 - 1) = 20$ (Total $\text{db} = 29$).
+2. **Baca Baris Interaksi Terlebih Dahulu (`Dosis:Lama`)**:
+   * Diperoleh **`F value = 372`** dengan **`Pr(>F) < 2e-16 ***`** ($< 0,001$). **Tolak $H_0$ interaksi!**
+   * Lihat maknanya pada tabel rata-rata dwitaraf: pada dosis tanpa fumigan (`Dosis = 0`), selisih antara fumigasi `2_Jam` ($95\%$) dan `4_Jam` ($93\%$) hanya terpaut **$2\%$**. Akan tetapi pada dosis tinggi (`Dosis = 64`), perpanjangan lama fumigasi dari `2_Jam` ($49\%$) ke `4_Jam` ($11\%$) menghancurkan daya kecambah hingga anjlok **$38\%$**! Itulah manifestasi nyata **interaksi sinergis toksisitas fumigan**.
+3. **Pengaruh Utama (`Dosis` & `Lama`)**: Keduanya juga sangat nyata (`F = 4116` dan `F = 2708`, `p < 2e-16 ***`), dengan `KK = 1.46%` yang sangat presisi.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Hasil analisis ragam faktorial dalam RAL menunjukkan terdapat interaksi yang sangat nyata antara dosis fumigan dan lama fumigasi terhadap daya kecambah benih tomat ($F_{\text{interaksi}} = 372,00$; $p < 2 \times 10^{-16}$; $\text{KK} = 1,46\%$). Peningkatan dosis fumigan menurunkan daya kecambah secara jauh lebih tajam pada lama fumigasi $4\text{ jam}$ (turun dari $93,0\%$ menjadi $11,0\%$) dibandingkan pada lama fumigasi $2\text{ jam}$ (turun dari $95,0\%$ menjadi $49,0\%$)."*
+</div>
+
+---
+
+# Analisis 3.3: ANOVA Faktorial 2 Faktor dalam RAK (Faktorial RAK)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Faktorial di Dalam Blok Lengkap:**
+
+Pada **Faktorial RAK**, setiap blok (kelompok) memuat satu set lengkap dari seluruh $a \times b$ kombinasi perlakuan. Keragaman total dipecah menjadi **lima komponen**: Kelompok (Blok), Pengaruh Utama $A$, Pengaruh Utama $B$, Interaksi $A \times B$, dan Galat Percobaan. Diasumsikan tidak ada interaksi antara Blok dan Perlakuan, sehingga galat berderajat bebas $(ab - 1)(r - 1)$.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus — Suplemen Seng & Minyak Ikan pada Sapi Potong:**
+
+* **Kapan Digunakan?** Gunakan **Faktorial RAK** apabila percobaan dua faktor diterapkan pada satuan percobaan (lahan atau ternak) yang memiliki keragaman awal sistematis sehingga harus dikelompokkan ke dalam blok.
+* **Skenario Penelitian**: Sebanyak 36 ekor sapi potong dikelompokkan ke dalam **3 Blok (`I`, `II`, `III`)** berdasarkan bobot awal tubuhnya (ringan, sedang, berat). Di dalam tiap blok diacak lengkap $4 \times 3 = 12$ kombinasi pakan dari **4 taraf Suplemen Seng / SM** (`0`, `25`, `50`, `75` ppm) dan **3 taraf Suplemen Minyak Ikan / SS** (`0`, `1.5`, `3.0` %), lalu diamati **pertambahan bobot badan harian (kg/hari)**. Dataset tersimpan pada `data/06_sapi_faktorial_rak.csv`.
+</div>
+
+## Model Linier & Hipotesis
+
+Model linier aditif Faktorial 2 Faktor dalam RAK adalah:
+
+$$Y_{ijk} = \mu + \rho_k + \alpha_i + \beta_j + (\alpha\beta)_{ij} + \varepsilon_{ijk}; \quad i = 1, \dots, a; \quad j = 1, \dots, b; \quad k = 1, \dots, r$$
+
+di mana $\rho_k$ adalah pengaruh aditif Blok ke-$k$, $\alpha_i$ pengaruh Suplemen Seng (SM) ke-$i$, $\beta_j$ pengaruh Minyak Ikan (SS) ke-$j$, $(\alpha\beta)_{ij}$ pengaruh interaksi $\text{SM} \times \text{SS}$, dan $\varepsilon_{ijk} \overset{\text{iid}}{\sim} N(0, \sigma^2)$.
+
+**Pasangan Hipotesis Utama:**
+
+1. **Interaksi $\text{SM} \times \text{SS}$**: $H_0 : (\alpha\beta)_{ij} = 0$ vs $H_1 :$ minimal ada satu $(\alpha\beta)_{ij} \neq 0$.
+2. **Pengaruh Utama SM**: $H_0 : \alpha_1 = \dots = \alpha_4 = 0$ vs $H_1 :$ minimal ada satu $\alpha_i \neq 0$.
+3. **Pengaruh Utama SS**: $H_0 : \beta_1 = \beta_2 = \beta_3 = 0$ vs $H_1 :$ minimal ada satu $\beta_j \neq 0$.
+4. **Efektivitas Blok**: $H_0 : \rho_1 = \rho_2 = \rho_3 = 0$ vs $H_1 :$ minimal ada satu $\rho_k \neq 0$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r faktorial-rak-sapi}
+# Langkah 1: Membaca data & mengonversi faktor dengan hati-hati
+#            Catatan penting: CSV menyimpan angka 3.0 sebagai numerik 3, sehingga gunakan
+#            levels = c(0, 1.5, 3) dan labels = c("0", "1.5", "3.0") agar tidak muncul NA!
+df_sapi <- read.csv("../data/06_sapi_faktorial_rak.csv")
+df_sapi$SM   <- factor(df_sapi$SM, levels = c(0, 25, 50, 75), labels = c("0", "25", "50", "75"))
+df_sapi$SS   <- factor(df_sapi$SS, levels = c(0, 1.5, 3), labels = c("0", "1.5", "3.0"))
+df_sapi$Blok <- factor(df_sapi$Blok, levels = c("I", "II", "III"))
+
+# Verifikasi tidak ada amatan hilang (seluruh 36 ekor sapi terbaca utuh)
+dim(df_sapi)
+
+# Langkah 2: Tabel rata-rata kombinasi perlakuan SM x SS (kg/hari)
+tabel_sapi <- with(df_sapi, tapply(Bobot, list(SM = SM, SS = SS), mean))
+round(addmargins(tabel_sapi, FUN = mean, quiet = TRUE), 3)
+
+# Langkah 3: Menjalankan ANOVA Faktorial RAK (Blok + SM * SS)
+model_fak_rak <- aov(Bobot ~ Blok + SM * SS, data = df_sapi)
+summary(model_fak_rak)
+
+# Langkah 4: Menghitung KTG dan KK (%)
+ktg_sapi <- summary(model_fak_rak)[[1]]["Residuals", "Mean Sq"]
+kk_sapi  <- sqrt(ktg_sapi) / mean(df_sapi$Bobot) * 100
+cat(sprintf("KTG = %.6f | KK = %.2f%%\n", ktg_sapi, kk_sapi))
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `summary(model_fak_rak)`:**
+
+1. **Derajat Bebas (`Df`)**: `Blok = 2`, `SM = 3`, `SS = 2`, `SM:SS = 6`, dan `Residuals = 22` ($(12 - 1)(3 - 1) = 22$, total $\text{db} = 35$ untuk 36 ekor sapi — lengkap tanpa ada pengamatan yang terhapus!).
+2. **Interaksi `SM:SS` Sangat Nyata (`F value = 2078`, `Pr(>F) < 2e-16 ***`)**:
+   * Perhatikan pola menarik pada tabel rata-rata: pada taraf `SM = 0, 25, 50`, peningkatan minyak ikan `SS` dari `0` ke `3.0%` selalu meningkatkan bobot harian secara tajam hingga mencapai puncak tertinggi **`1.810 kg/hari`** pada kombinasi **`SM = 50` ppm dan `SS = 3.0%`**.
+   * Namun pada dosis seng tertinggi (`SM = 75` ppm), peningkatan minyak ikan ke `3.0%` justru **membalik arah respons menjadi turun** (`1.257 kg/hari` < `1.333 kg/hari` pada `SS = 1.5%`). Karena interaksi sangat nyata, penentuan rekomendasi dosis terbaik **wajib dilanjutkan ke Uji Pengaruh Sederhana pada Analisis 3.5**!
+3. **Efektivitas Blok (`Blok`)**: Sangat nyata (`F = 2612, p < 2e-16 ***`), menekan `KK` hingga `0.32%`.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan analisis ragam Faktorial RAK, terdapat interaksi yang sangat nyata antara pemberian suplemen seng (SM) dan suplemen minyak ikan (SS) terhadap pertambahan bobot harian sapi potong ($F_{\text{interaksi}} = 2078,0$; $p < 2 \times 10^{-16}$). Pengelompokan berdasarkan bobot awal sapi juga berpengaruh sangat nyata ($F_{\text{blok}} = 2612,0$; $p < 2 \times 10^{-16}$). Kombinasi suplemen seng $50\text{ ppm}$ dengan minyak ikan $3,0\%$ menghasilkan rata-rata pertambahan bobot harian tertinggi sebesar $1,810\text{ kg/hari}$."*
+</div>
+
+---
+
+# Analisis 3.4: ANOVA Faktorial dalam Rancangan Bujur Sangkar Latin (Faktorial RBSL)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Pengendalian Dua Arah Gradasi Sekaligus pada Faktorial RBSL:**
+
+Apabila lahan percobaan memiliki **dua sumber keragaman lingkungan yang saling tegak lurus** (misalnya jarak dari saluran irigasi sebagai **Baris** dan kemiringan lereng sebagai **Kolom**), atau pada percobaan ternak di mana **Baris = Periode Waktu** dan **Kolom = Individu Ternak**, maka $t = a \times b$ kombinasi faktorial disusun dalam **Rancangan Bujur Sangkar Latin (RBSL / *Latin Square Design*)** berukuran $(ab) \times (ab)$. Dengan demikian, keragaman Baris dan keragaman Kolom sama-sama dikeluarkan dari Galat Percobaan!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Konteks Kasus — Varietas Jagung $\times$ Sistem Olah Tanah pada Lahan Bergradasi Ganda:**
+
+* **Kapan Digunakan?** Gunakan **Faktorial RBSL** ketika jumlah kombinasi perlakuan tidak terlalu besar (umumnya $2 \times 2 = 4$, $2 \times 3 = 6$, atau $3 \times 3 = 9$ kombinasi, sebab RBSL mewajibkan jumlah Baris $=$ jumlah Kolom $=$ jumlah kombinasi $ab$) dan terdapat dua arah keragaman sistematis yang harus dikendalikan.
+* **Skenario Penelitian**: Percobaan faktorial $2 \times 2$ menguji **2 Varietas Jagung Hibrida** (`V1`, `V2`) dan **2 Sistem Olah Tanah** (`Minimum`, `Intensif`) pada 16 petak kebun percobaan ($4 \text{ Baris Irigasi} \times 4 \text{ Kolom Kesuburan Lereng}$) terhadap hasil pipilan kering jagung (ton/ha).
+</div>
+
+## Model Linier & Hipotesis Faktorial RBSL
+
+Model linier aditif untuk Faktorial $a \times b$ dalam RBSL berukuran $t \times t$ (dengan $t = ab$) adalah:
+
+$$Y_{ij(kl)} = \mu + R_i + C_j + \alpha_k + \beta_l + (\alpha\beta)_{kl} + \varepsilon_{ij(kl)}$$
+
+dengan $i = 1, \dots, ab$ (Baris); $j = 1, \dots, ab$ (Kolom); $k = 1, \dots, a$ (Faktor $A$); $l = 1, \dots, b$ (Faktor $B$); serta derajat bebas galat $\text{db}_g = (ab - 1)(ab - 2)$.
+
+**Pasangan Hipotesis Utama:**
+
+* **Interaksi $A \times B$**: $H_0 : (\alpha\beta)_{kl} = 0$ vs $H_1 :$ minimal ada satu $(\alpha\beta)_{kl} \neq 0$.
+* **Pengaruh Utama Varietas ($A$)**: $H_0 : \alpha_1 = \alpha_2 = 0$ vs $H_1 : \alpha_1 \neq \alpha_2$.
+* **Pengaruh Utama Olah Tanah ($B$)**: $H_0 : \beta_1 = \beta_2 = 0$ vs $H_1 : \beta_1 \neq \beta_2$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r faktorial-rbsl}
+# Langkah 1: Menyusun data percobaan Faktorial 2x2 dalam RBSL 4x4 (16 petak)
+#            Kombinasi A = V1:Minimum, B = V1:Intensif, C = V2:Minimum, D = V2:Intensif
+df_fak_rbsl <- data.frame(
+  Baris        = factor(rep(1:4, each = 4)),
+  Kolom        = factor(rep(1:4, times = 4)),
+  Kombinasi    = c("A", "B", "C", "D",
+                   "B", "A", "D", "C",
+                   "C", "D", "A", "B",
+                   "D", "C", "B", "A"),
+  Hasil_Jagung = c(6.2, 7.1, 6.8, 8.4,
+                   6.9, 5.8, 8.1, 6.5,
+                   6.4, 8.0, 5.6, 6.6,
+                   7.9, 6.3, 6.5, 5.5)
+)
+df_fak_rbsl$Varietas   <- factor(ifelse(df_fak_rbsl$Kombinasi %in% c("A", "B"), "V1", "V2"))
+df_fak_rbsl$Olah_Tanah <- factor(ifelse(df_fak_rbsl$Kombinasi %in% c("A", "C"), "Minimum", "Intensif"),
+                                 levels = c("Minimum", "Intensif"))
+
+# Langkah 2: Memverifikasi denah Bujur Sangkar Latin 4x4 & rata-rata kombinasi
+matrix(paste0(df_fak_rbsl$Varietas, "-", df_fak_rbsl$Olah_Tanah), nrow = 4, byrow = TRUE)
+with(df_fak_rbsl, tapply(Hasil_Jagung, list(Varietas = Varietas, Olah_Tanah = Olah_Tanah), mean))
+
+# Langkah 3: Menjalankan ANOVA Faktorial RBSL (Baris + Kolom + Varietas * Olah_Tanah)
+model_fak_rbsl <- aov(Hasil_Jagung ~ Baris + Kolom + Varietas * Olah_Tanah, data = df_fak_rbsl)
+summary(model_fak_rbsl)
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `summary(model_fak_rbsl)`:**
+
+1. **Derajat Bebas (`Df`)**: `Baris = 3`, `Kolom = 3`, `Varietas = 1`, `Olah_Tanah = 1`, `Varietas:Olah_Tanah = 1`, dan `Residuals = 6` ($(4 - 1)(4 - 2) = 6$, total $\text{db} = 15$ untuk 16 petak).
+2. **Efektivitas Pengendalian Dua Arah**: Baik pengelompokan `Baris` (`F = 305, p = 6.03e-07 ***`) maupun `Kolom` (`F = 11, p = 0.00749 **`) terbukti nyata menangkap keragaman kesuburan dua arah.
+3. **Interaksi `Varietas:Olah_Tanah` Nyata (`F = 432, p = 8.07e-07 ***`)**: Varietas unggul `V2` merespons pengolahan tanah `Intensif` secara jauh lebih tinggi (naik dari $6,50$ menjadi $8,10\text{ ton/ha}$, selisih $+1,60\text{ ton/ha}$) dibandingkan `V1` (naik dari $5,775$ menjadi $6,775\text{ ton/ha}$, selisih $+1,00\text{ ton/ha}$).
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Analisis ragam Faktorial $2 \times 2$ dalam RBSL menunjukkan adanya interaksi sangat nyata antara varietas jagung dan sistem pengolahan tanah terhadap hasil pipilan kering ($F = 432,0$; $p = 8,07 \times 10^{-7}$), di mana kombinasi Varietas `V2` dengan pengolahan tanah `Intensif` menghasilkan panen tertinggi sebesar $8,10\text{ ton/ha}$."*
+</div>
+
+---
+
+# Analisis 3.5: Plot Interaksi & Uji Lanjut Pengaruh Sederhana (*Simple Effects*)
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Membaca Plot Interaksi & Mengapa Wajib Menguji *Simple Effects*:**
+
+Grafik interaksi (`interaction.plot`) memetakan taraf Faktor $A$ pada sumbu mendatar, rata-rata respon $Y$ pada sumbu tegak, dan membedakan taraf Faktor $B$ sebagai garis-garis terpisah:
+* **Garis-garis tampak sejajar**: Menandakan **tidak ada interaksi**. Urutan keunggulan Faktor $A$ sama saja di semua taraf Faktor $B$, sehingga uji lanjut cukup dilakukan pada rata-rata marginal Pengaruh Utama.
+* **Garis-garis menyebar tajam (*divergent*) atau bersilangan (*crossover*)**: Menandakan **ada interaksi nyata**. Menguji rata-rata marginal menjadi menyesatkan! Kita wajib melakukan **Uji Pengaruh Sederhana (*Simple Effects*)**, yaitu mengiris analisis untuk membandingkan taraf Faktor $A$ **di dalam masing-masing taraf Faktor $B$ secara terpisah** (`~ A | B`) menggunakan paket `emmeans`.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Visualisasi & Pengaruh Sederhana:**
+
+Kita akan membandingkan dua tipe interaksi klasik dari dataset sebelumnya:
+1. **Interaksi Sinergis Menyebar (*Divergent*)** pada kasus **Fumigasi Benih Tomat** (`Dosis x Lama`).
+2. **Interaksi Bersilangan (*Crossover*)** pada kasus **Bobot Sapi Potong** (`SM x SS`), lalu menentukan taraf suplemen seng (`SM`) terbaik pada masing-masing taraf minyak ikan (`SS`) serta sebaliknya menggunakan `emmeans()` dan `cld()`.
+</div>
+
+## Model Rumus Uji Pengaruh Sederhana (*Simple Effects*)
+
+Untuk membandingkan dua nilai tengah sel kombinasi pada taraf Faktor $B$ ke-$j$ yang tetap ($H_0 : \mu_{ij} = \mu_{i'j}$ vs $H_1 : \mu_{ij} \neq \mu_{i'j}$), statistik uji-$t$ pengaruh sederhana menggunakan **$\text{KTG}$ gabungan model faktorial penuh** dengan derajat bebas $\text{db}_g$:
+
+$$t_{\text{hitung }(i\text{ vs }i' \mid B_j)} = \frac{\bar{Y}_{ij\cdot} - \bar{Y}_{i'j\cdot}}{\sqrt{\frac{2 \cdot \text{KTG}}{r}}} \sim t_{(\text{db}_g)}$$
+
+dengan penyesuaian nilai-$p$ Tukey untuk keluarga perbandingan $a$ taraf di dalam masing-masing irisannya.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r plot-interaksi-emmeans, fig.width=10.5, fig.height=4.8, fig.cap="Dua pola interaksi nyata: interaksi menyebar pada benih tomat (kiri) dan interaksi bersilangan/perubahan arah pada pertambahan bobot sapi (kanan)."}
+library(emmeans)
+library(multcomp)
+
+# Langkah 1: Membuat Plot Interaksi berdampingan untuk Kasus Tomat & Kasus Sapi
+par(mfrow = c(1, 2))
+
+# Plot 1: Interaksi menyebar (divergent) pada Benih Tomat
+interaction.plot(
+  x.factor     = df_tomat$Dosis,
+  trace.factor = df_tomat$Lama,
+  response     = df_tomat$Daya_Kecambah,
+  type = "b", pch = c(19, 17), col = c("#2980b9", "#c0392b"), lwd = 2.2,
+  xlab = "Dosis Fumigan (g/m3)",
+  ylab = "Rata-rata Daya Kecambah (%)",
+  trace.label = "Lama Fumigasi",
+  main = "Interaksi Menyebar: Dosis x Lama (Tomat)"
+)
+
+# Plot 2: Interaksi bersilangan (crossover) pada Pertambahan Bobot Sapi
+interaction.plot(
+  x.factor     = df_sapi$SM,
+  trace.factor = df_sapi$SS,
+  response     = df_sapi$Bobot,
+  type = "b", pch = c(19, 17, 15), col = c("#2980b9", "#e67e22", "#27ae60"), lwd = 2.2,
+  xlab = "Suplemen Seng / SM (ppm)",
+  ylab = "Pertambahan Bobot Sapi (kg/hari)",
+  trace.label = "Minyak Ikan (SS)",
+  main = "Interaksi Bersilangan: SM x SS (Sapi)"
+)
+par(mfrow = c(1, 1))
+
+# Langkah 2: Uji Lanjut Pengaruh Sederhana (Simple Effects) Arah 1:
+#            Membandingkan taraf Suplemen Seng (SM) di dalam masing-masing taraf Minyak Ikan (SS)
+emm_sm_per_ss <- emmeans(model_fak_rak, ~ SM | SS)
+pairs(emm_sm_per_ss, adjust = "tukey")
+
+# Menampilkan tabel ringkas huruf notasi (Compact Letter Display / CLD) per irisan SS
+cld(emm_sm_per_ss, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+# Langkah 3: Uji Lanjut Pengaruh Sederhana Arah 2:
+#            Membandingkan taraf Minyak Ikan (SS) di dalam masing-masing taraf Suplemen Seng (SM)
+emm_ss_per_sm <- emmeans(model_fak_rak, ~ SS | SM)
+cld(emm_ss_per_sm, alpha = 0.05, Letters = letters, adjust = "tukey")
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Grafik Interaksi & Output `emmeans` / `cld`:**
+
+1. **Bukti Visual pada Grafik Kanan (`SM x SS`)**:
+   * Garis hijau (`SS = 3.0`), oranye (`SS = 1.5`), dan biru (`SS = 0`) naik bersama-sama dari `SM = 0` hingga mencapai puncak di `SM = 50`. Namun saat memasuki `SM = 75`, garis hijau `SS = 3.0` **menukik tajam memotong garis oranye `SS = 1.5` ke bawah**!
+2. **Membaca Tabel `cld(emm_sm_per_ss)` (Membandingkan `SM` pada tiap `SS`)**:
+   * *(Catatan: `cld` mengurutkan `emmean` dari terkecil `a` ke terbesar `d`)*.
+   * Pada **`SS = 0`**, urutan kenaikan bobot adalah `SM 0 (1.033 a) < SM 25 (1.157 b) < SM 75 (1.210 c) < SM 50 (1.233 d)`.
+   * Pada **`SS = 1.5`**, urutan berubah menjadi `SM 0 (1.183 a) < SM 75 (1.333 b) < SM 25 (1.357 c) < SM 50 (1.583 d)`.
+   * Pada **`SS = 3.0`**, urutan berbalik tajam di mana **`SM 75` jatuh menjadi perlakuan terburuk (`1.257 a`)**, bahkan nyata lebih rendah daripada tanpa suplemen seng `SM 0` (`1.283 b`), sedangkan **`SM 50` menjadi perlakuan terbaik mutlak (`1.810 d`)**!
+3. **Membaca Tabel `cld(emm_ss_per_sm)` (Membandingkan `SS` pada tiap `SM`)**:
+   * Pada `SM = 0, 25, dan 50`, taraf `SS = 3.0` selalu menempati huruf tertinggi (`c`). Namun khusus pada `SM = 75`, taraf terbaik justru bergeser ke **`SS = 1.5` (`1.333 c`)**, bukan `SS = 3.0` (`1.257 b`).
+
+**Kalimat Kesimpulan Siap Kutip (Uji Lanjut Pengaruh Sederhana):**
+> *"Uji lanjut pengaruh sederhana menggunakan metode Tukey pada $\alpha = 5\%$ menunjukkan bahwa pada seluruh taraf minyak ikan ($0\%$, $1,5\%$, maupun $3,0\%$), pemberian suplemen seng pada dosis $50\text{ ppm}$ secara konsisten menghasilkan pertambahan bobot harian tertinggi dan berbeda nyata dari dosis lainnya, dengan capaian optimum sebesar $1,810\text{ kg/hari}$ pada kombinasi `SM = 50 ppm` dan `SS = 3,0%` ($p < 0,0001$). Sebaliknya, peningkatan suplemen seng hingga $75\text{ ppm}$ yang dikombinasikan dengan minyak ikan $3,0\%$ menimbulkan efek antagonis yang menurunkan pertambahan bobot harian secara nyata menjadi $1,257\text{ kg/hari}$."*
+</div>

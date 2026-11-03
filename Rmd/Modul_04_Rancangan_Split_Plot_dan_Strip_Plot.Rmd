@@ -1,0 +1,401 @@
+---
+title: "Modul 04: Rancangan Petak Terpisah (Split-Plot) & Petak Berjalur (Strip-Plot)"
+output:
+  rmdformats::robobook:
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: show
+    toc_depth: 3
+    use_bookdown: true
+    css: "../assets/style_robobook.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 5,
+  comment = "#>"
+)
+```
+
+# Mengapa Tidak Semua Percobaan Dua Faktor Bisa Menggunakan Faktorial Biasa?
+
+Pada **Modul 03**, seluruh kombinasi perlakuan $a \times b$ memiliki ukuran petak yang setara dan diacak sekaligus dalam satu tahap sehingga hanya menghasilkan **satu komponen galat percobaan**. Namun dalam praktik penelitian pertanian dan biologi, sering kali terdapat kendala teknis lapangan atau prioritas ketelitian yang mengharuskan pengacakan dilakukan **secara bertahap**, melahirkan rancangan berlapis galat ganda (**Split-Plot**) dan tiga lapis galat (**Strip-Plot / Split-Block**).
+
+| Karakteristik Kunci | Faktorial Biasa (RAK) | Petak Terpisah (*Split-Plot* RAK) | Petak Berjalur (*Strip-Plot* RAK) |
+| :--- | :--- | :--- | :--- |
+| **Kendala Teknis Petak** | Faktor $A$ dan $B$ mudah ditempatkan pada petak kecil setara. | **Faktor $A$ butuh petak besar** (irigasi, traktor, lokasi), Faktor $B$ cukup petak kecil (benih, pupuk). | **Faktor $A$ dan $B$ keduanya butuh jalur memanjang/besar** (traktor bajak $\times$ mesin sebar pupuk). |
+| **Prosedur Pengacakan** | 1 tahap terhadap seluruh $ab$ kombinasi sekaligus. | **2 tahap berjenjang**: acak Petak Utama ($A$) dulu, lalu acak Anak Petak ($B$) di dalam tiap $A$. | **2 pengacakan bebas saling tegak lurus**: acak jalur mendatar ($A$) dan acak jalur tegak ($B$) di tiap blok. |
+| **Banyak Lapisan Galat** | **1 Galat** ($\text{KTG}$) | **2 Galat**: Galat (a) & Galat (b) | **3 Galat**: Galat (a), Galat (b), & Galat (c) |
+| **Urutan Ketelitian Pengujian** | Setara antara $A$, $B$, dan $A \times B$. | **Anak Petak ($B$) & Interaksi ($AB$) lebih teliti** daripada Petak Utama ($A$). | **Interaksi ($AB$) paling teliti**, mengorbankan ketelitian pengaruh utama $A$ dan $B$. |
+
+---
+
+# Analisis 4.1: Pengacakan Rancangan Split-Plot dan Strip-Plot
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Perbedaan Tata Letak Anak Petak vs Petak Berjalur:**
+
+* Pada **Rancangan Petak Terpisah (*Split-Plot*)**: Setiap blok dibagi menjadi $a$ **Petak Utama (*Main Plot / Whole Plot*)** untuk mengacak taraf Faktor $A$. Selanjutnya, masing-masing Petak Utama dibagi lagi menjadi $b$ **Anak Petak (*Subplot*)**, dan taraf Faktor $B$ diacak **secara terpisah/berbeda urutan** di dalam setiap Petak Utama.
+* Pada **Rancangan Petak Berjalur (*Strip-Plot / Split-Block*)**: Setiap blok dibagi menjadi $a$ jalur kolom utuh untuk mengacak Faktor $A$, lalu dipotong tegak lurus oleh $b$ jalur baris menerus untuk mengacak Faktor $B$. Akibatnya, urutan taraf Faktor $B$ **sama menerus di sepanjang satu baris melintasi seluruh jalur $A$** di dalam blok yang sama!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus: Pengacakan Denah Lapangan:**
+
+Seorang peneliti ingin merancang percobaan 3 taraf Faktor $A$ (`A1, A2, A3`) dan 4 taraf Faktor $B$ (`B1, B2, B3, B4`) dengan 3 ulangan/kelompok:
+1. **Split-Plot RAL**: Jika Faktor $A$ berupa 3 pengaturan suhu ruang tumbuh (*growth chamber*) yang masing-masing diulang 3 kali (9 ruang), dan di dalam tiap ruang diletakkan 4 varietas tanaman ($B$).
+2. **Split-Plot RAK**: Jika Faktor $A$ berupa 3 cara penggenangan air sawah (petak besar berpemὄng kokoh) dan Faktor $B$ berupa 4 dosis pupuk daun pada 3 blok lahan.
+3. **Strip-Plot RAK**: Jika Faktor $A$ berupa 3 kedalaman pembajakan traktor (harus melaju lurus memanjang tanpa putus) dan Faktor $B$ berupa 4 sistem penyiangan mekanis yang melintas tegak lurus.
+</div>
+
+## Struktur Satuan Percobaan & Derajat Bebas Galat
+
+Untuk $a$ taraf Faktor $A$, $b$ taraf Faktor $B$, dan $r$ ulangan/kelompok (total $N = abr$ petak pengamatan):
+
+* **Split-Plot RAL**: $\text{db}_{\text{Galat (a)}} = a(r - 1)$ dan $\text{db}_{\text{Galat (b)}} = a(b - 1)(r - 1)$.
+* **Split-Plot RAK**: $\text{db}_{\text{Galat (a)}} = (a - 1)(r - 1)$ dan $\text{db}_{\text{Galat (b)}} = a(b - 1)(r - 1)$.
+* **Strip-Plot RAK**: $\text{db}_{\text{Galat (a)}} = (a - 1)(r - 1)$, $\text{db}_{\text{Galat (b)}} = (b - 1)(r - 1)$, dan $\text{db}_{\text{Galat (c)}} = (a - 1)(b - 1)(r - 1)$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r pengacakan-split-strip}
+library(agricolae)
+
+A <- c("A1", "A2", "A3")       # 3 taraf Faktor A
+B <- c("B1", "B2", "B3", "B4") # 4 taraf Faktor B
+
+# 1. Pengacakan Split-Plot dalam RAL (CRD): 3 x 3 = 9 Petak Utama, masing-masing 4 Anak Petak
+desain_split_ral <- design.split(trt1 = A, trt2 = B, r = 3, design = "crd", seed = 512, serie = 2)
+head(desain_split_ral$book, 12)
+
+# 2. Pengacakan Split-Plot dalam RAK (RCBD): Perhatikan urutan B berbeda di tiap Petak Utama!
+desain_split_rak <- design.split(trt1 = A, trt2 = B, r = 3, design = "rcbd", seed = 512, serie = 2)
+head(desain_split_rak$book, 12) # Seluruh 12 anak petak pada Blok 1
+
+# 3. Pengacakan Strip-Plot dalam RAK: Perhatikan urutan B sama persis melintasi jalur A di Blok 1!
+desain_strip_rak <- design.strip(trt1 = A, trt2 = B, r = 3, seed = 512, serie = 2)
+head(desain_strip_rak$book, 12) # Seluruh 12 petak perpotongan jalur pada Blok 1
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Bandingkan Perbedaan Mencolok `desain_split_rak$book` vs `desain_strip_rak$book` pada Blok 1:**
+
+1. **Pada Split-Plot RAK (`desain_split_rak$book`)**:
+   * Petak Utama `101` mendapat `A3` dengan urutan anak petak **`B2, B1, B4, B3`**.
+   * Petak Utama `102` mendapat `A1` dengan urutan anak petak **`B3, B4, B1, B2`** (diacak ulang secara bebas!).
+   * Petak Utama `103` mendapat `A2` dengan urutan anak petak **`B2, B3, B4, B1`**.
+2. **Pada Strip-Plot RAK (`desain_strip_rak$book`)**:
+   * Jalur `A3`, jalur `A1`, dan jalur `A2` pada Blok 1 **ketiganya dipotong oleh urutan jalur tegak $B$ yang persis sama**, yaitu **`B3, B4, B1, B2`**! Perbedaan fisik pengacakan di lapangan inilah yang menyebabkan model matematika Strip-Plot wajib memisahkan Galat (b) tersendiri untuk faktor $B$.
+</div>
+
+---
+
+# Analisis 4.2: ANOVA Split-Plot dalam RAL
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Dua Satuan Percobaan Berbeda Ukuran pada Split-Plot RAL:**
+
+Pada **Split-Plot dalam RAL**, satuan percobaan untuk Faktor $A$ adalah **Petak Utama** (sebanyak $a \times r$ unit tanpa blok), sehingga keragaman antar-ulangan di dalam taraf $A$ yang sama membentuk **Galat Petak Utama / Galat (a)** yang khusus digunakan sebagai penyebut uji $F$ bagi **Faktor $A$**. Sementara itu, satuan percobaan untuk Faktor $B$ adalah **Anak Petak**, sehingga sisa keragaman di dalam petak utama membentuk **Galat Anak Petak / Galat (b)** sebagai penyebut uji $F$ bagi **Faktor $B$** dan **Interaksi $A \times B$**.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus — Serapan Debu 10 Jenis Tanaman Pelindung di 2 Lokasi:**
+
+* **Kapan Digunakan?** Gunakan **Split-Plot RAL** apabila faktor Petak Utama ($A$) berupa ruang tumbuh, kolam, atau zona lokasi homogen yang diacak lengkap tanpa blok, lalu di dalam setiap unit petak utama ditanam/ditempatkan seluruh taraf Anak Petak ($B$).
+* **Skenario Penelitian**: Penelitian ekologi lanskap mengevaluasi kemampuan **10 jenis tanaman pelindung jalan (`T1` s.d. `T10`, Anak Petak)** dalam menjerap polutan debu daun ($\text{g/m}^2$) pada **2 kawasan Lokasi (`Kampus` vs `Pabrik`, Petak Utama)** dengan **3 titik zona ulangan** per lokasi (total $2 \times 3 = 6$ petak utama, dan $6 \times 10 = 60$ satuan pengamatan anak petak). Dataset tersimpan pada `data/07_debu_splitplot_ral.csv`.
+</div>
+
+## Model Linier, Rumus Uji $F$ Berlapis, & Hipotesis
+
+Model linier aditif untuk Split-Plot dalam RAL adalah:
+
+$$Y_{ijk} = \mu + \alpha_i + \delta_{ik} + \beta_j + (\alpha\beta)_{ij} + \varepsilon_{ijk}; \quad i = 1, \dots, a; \quad j = 1, \dots, b; \quad k = 1, \dots, r$$
+
+di mana:
+
+* $\alpha_i$ : Pengaruh Petak Utama Lokasi ke-$i$, diuji dengan **Galat (a)** $\delta_{ik} \overset{\text{iid}}{\sim} N(0, \sigma_\delta^2)$ berderajat bebas $\text{db}_a = a(r - 1)$:
+  $$F_{\text{hitung }(A)} = \frac{\text{KT}_A}{\text{KTG}_a} \sim F_{(\alpha;\; a-1,\; a(r-1))}$$
+* $\beta_j$ dan $(\alpha\beta)_{ij}$ : Pengaruh Anak Petak Tanaman ke-$j$ serta Interaksi $\text{Lokasi} \times \text{Tanaman}$, keduanya diuji dengan **Galat (b)** $\varepsilon_{ijk} \overset{\text{iid}}{\sim} N(0, \sigma_\varepsilon^2)$ berderajat bebas $\text{db}_b = a(b - 1)(r - 1)$:
+  $$F_{\text{hitung }(B)} = \frac{\text{KT}_B}{\text{KTG}_b}, \qquad F_{\text{hitung }(AB)} = \frac{\text{KT}_{AB}}{\text{KTG}_b}$$
+
+**Tiga Pasang Hipotesis:**
+
+1. **Interaksi $\text{Lokasi} \times \text{Tanaman}$**: $H_0 : (\alpha\beta)_{ij} = 0$ vs $H_1 :$ minimal satu $(\alpha\beta)_{ij} \neq 0$.
+2. **Anak Petak (Jenis Tanaman)**: $H_0 : \beta_1 = \dots = \beta_{10} = 0$ vs $H_1 :$ minimal satu $\beta_j \neq 0$.
+3. **Petak Utama (Lokasi)**: $H_0 : \alpha_{\text{Kampus}} = \alpha_{\text{Pabrik}}$ vs $H_1 : \alpha_{\text{Kampus}} \neq \alpha_{\text{Pabrik}}$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r splitplot-ral-debu, fig.cap="Profil rata-rata serapan debu (g/m2) dari 10 jenis tanaman pelindung pada kawasan Kampus dan kawasan Pabrik."}
+# Langkah 1: Membaca data & membentuk identitas unik 6 unit Petak Utama (Lokasi x Ulangan)
+df_debu <- read.csv("../data/07_debu_splitplot_ral.csv")
+df_debu$Lokasi      <- factor(df_debu$Lokasi, levels = c("Kampus", "Pabrik"))
+df_debu$Tanaman     <- factor(df_debu$Tanaman, levels = paste0("T", 1:10))
+df_debu$Ulangan     <- factor(df_debu$Ulangan)
+df_debu$Petak_Utama <- interaction(df_debu$Lokasi, df_debu$Ulangan)
+
+# Langkah 2: Menjalankan ANOVA Split-Plot RAL dengan suku Error(Petak_Utama)
+model_split_ral <- aov(Serapan_Debu ~ Lokasi * Tanaman + Error(Petak_Utama), data = df_debu)
+ringkasan_split_ral <- summary(model_split_ral)
+print(ringkasan_split_ral)
+
+# Langkah 3: Menghitung Koefisien Keragaman Petak Utama (KKa) dan Anak Petak (KKb)
+ktg_a_debu <- ringkasan_split_ral[["Error: Petak_Utama"]][[1]]["Residuals", "Mean Sq"]
+ktg_b_debu <- ringkasan_split_ral[["Error: Within"]][[1]]["Residuals", "Mean Sq"]
+rata_debu  <- mean(df_debu$Serapan_Debu)
+
+cat(sprintf("Rata-rata = %.2f g/m2 | KTG(a) = %.4f (KKa = %.2f%%) | KTG(b) = %.4f (KKb = %.2f%%)\n",
+            rata_debu,
+            ktg_a_debu, sqrt(ktg_a_debu) / rata_debu * 100,
+            ktg_b_debu, sqrt(ktg_b_debu) / rata_debu * 100))
+
+# Langkah 4: Visualisasi profil serapan debu 10 jenis tanaman di kedua lokasi
+interaction.plot(
+  x.factor     = df_debu$Tanaman,
+  trace.factor = df_debu$Lokasi,
+  response     = df_debu$Serapan_Debu,
+  type = "b", pch = c(19, 17), col = c("#27ae60", "#c0392b"), lwd = 2.2,
+  xlab = "Jenis Tanaman Pelindung (Anak Petak)",
+  ylab = "Rata-rata Serapan Debu (g/m2)",
+  trace.label = "Lokasi",
+  main = "Profil Serapan Debu 10 Jenis Tanaman di Kampus vs Pabrik"
+)
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Tabel Dua Lapisan (`Error: Petak_Utama` & `Error: Within`):**
+
+1. **Lapisan Atas — `Error: Petak_Utama` (Galat a)**:
+   * `Lokasi` memiliki `Df = 1` dan `Residuals` (Galat a) memiliki `Df = 4` ($a(r - 1) = 2(3 - 1) = 4$).
+   * Nilai **`F value = 4233`** dengan **`Pr(>F) = 3.34e-07 ***`**: kawasan `Pabrik` memiliki beban paparan dan serapan debu tanaman yang jauh lebih tinggi dibandingkan kawasan `Kampus`.
+2. **Lapisan Bawah — `Error: Within` (Galat b)**:
+   * `Tanaman` memiliki `Df = 9`, `Lokasi:Tanaman` memiliki `Df = 9`, dan `Residuals` (Galat b) memiliki `Df = 36` ($2 \times 9 \times 2 = 36$).
+   * **Interaksi `Lokasi:Tanaman` tidak nyata** (`F = 1.388`, **`Pr(>F) = 0.23 > 0.05`**). Terlihat jelas pada grafik di atas bahwa kurva merah (`Pabrik`) dan kurva hijau (`Kampus`) **bergerak naik-turun secara sejajar**: tanaman yang paling unggul menjerap debu di kawasan Pabrik (`T5`, diikuti `T10` dan `T7`) juga merupakan tanaman terbaik di kawasan Kampus!
+   * **Pengaruh Utama `Tanaman` sangat nyata** (`F = 66.397`, **`Pr(>F) < 2e-16 ***`**).
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan analisis ragam Rancangan Petak Terpisah dalam RAL, interaksi antara lokasi penanaman dan jenis tanaman pelindung tidak berpengaruh nyata terhadap serapan debu daun ($F = 1,39$; $p = 0,2300$), namun pengaruh utama lokasi ($F = 4233,0$; $p = 3,34 \times 10^{-7}$; $\text{KK}_a = 2,55\%$) dan pengaruh utama jenis tanaman ($F = 66,40$; $p < 2 \times 10^{-16}$; $\text{KK}_b = 5,57\%$) masing-masing berpengaruh sangat nyata. Tanaman `T5` secara konsisten memiliki kapasitas serapan debu tertinggi baik di lingkungan pabrik maupun kampus."*
+</div>
+
+---
+
+# Analisis 4.3: ANOVA Split-Plot dalam RAK & Uji Lanjut LSMeans
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Split-Plot dalam RAK (Rancangan Paling Populer di Agronomi):**
+
+Pada **Split-Plot dalam RAK**, setiap kelompok (blok) dibagi menjadi $a$ Petak Utama, sehingga interaksi formal antara `Kelompok` dan `Faktor A` (`Kelompok:A`) berperan sebagai **Galat Petak Utama / Galat (a)** dengan derajat bebas $(a - 1)(r - 1)$. Sementara itu, **Galat Anak Petak / Galat (b)** memiliki derajat bebas $a(b - 1)(r - 1)$ yang jauh lebih besar, menjadikan pengujian Anak Petak ($B$) dan Interaksi ($A \times B$) memiliki ketelitian lebih tinggi.
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus — Varietas Gandum $\times$ Perlakuan Kimiawi Benih:**
+
+* **Kapan Digunakan?** Gunakan **Split-Plot RAK** ketika percobaan lapangan berblok melibatkan: (1) Faktor $A$ yang membutuhkan petak besar (varietas yang ditanam dengan mesin penebar, sistem irigasi, atau olah tanah), serta (2) Faktor $B$ yang mudah diterapkan pada sub-petak kecil dan ingin diuji secara lebih peka.
+* **Skenario Penelitian**: Percobaan klasik pada **4 Varietas Gandum** sebagai **Petak Utama** (`A1_Vicland`, `A2_Branch`, `A3_Clintland`, `A4_Sauk`) dan **4 Perlakuan Fungisida/Kimiawi Benih** sebagai **Anak Petak** (`B1_Kontrol`, `B2_Ceresan`, `B3_Panogen`, `B4_Agrox`) yang diulang dalam **4 Kelompok lahan (`I..IV`)**, mengamati hasil panen gandum (bushels/acre, total $4 \times 4 \times 4 = 64$ anak petak). Dataset tersimpan pada `data/08_gandum_splitplot_rak.csv`.
+</div>
+
+## Model Linier, Rumus Koefisien Keragaman, & Hipotesis
+
+Model linier aditif untuk Split-Plot dalam RAK adalah:
+
+$$Y_{ijk} = \mu + \rho_k + \alpha_i + \delta_{ik} + \beta_j + (\alpha\beta)_{ij} + \varepsilon_{ijk}$$
+
+dengan dua komponen galat dan masing-masing Koefisien Keragamannya:
+
+$$\text{Galat (a): } \text{db}_a = (a - 1)(r - 1), \quad \text{KK}_a = \frac{\sqrt{\text{KTG}_a}}{\bar{Y}_{\cdot\cdot\cdot}} \times 100\%$$
+
+$$\text{Galat (b): } \text{db}_b = a(b - 1)(r - 1), \quad \text{KK}_b = \frac{\sqrt{\text{KTG}_b}}{\bar{Y}_{\cdot\cdot\cdot}} \times 100\%$$
+
+**Pasangan Hipotesis Utama:**
+
+1. **Interaksi $\text{Varietas} \times \text{Perlakuan Benih}$** (diuji terhadap $\text{KTG}_b$): $H_0 : (\alpha\beta)_{ij} = 0$ vs $H_1 :$ minimal satu $(\alpha\beta)_{ij} \neq 0$.
+2. **Anak Petak — Perlakuan Benih ($B$)** (diuji terhadap $\text{KTG}_b$): $H_0 : \beta_1 = \dots = \beta_4 = 0$ vs $H_1 :$ minimal satu $\beta_j \neq 0$.
+3. **Petak Utama — Varietas ($A$)** (diuji terhadap $\text{KTG}_a$): $H_0 : \alpha_1 = \dots = \alpha_4 = 0$ vs $H_1 :$ minimal satu $\alpha_i \neq 0$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r splitplot-rak-gandum}
+library(emmeans)
+library(multcomp)
+
+# Langkah 1: Membaca data dan mengatur faktor Kelompok, Petak Utama (Varietas_A), & Anak Petak (Perlakuan_B)
+df_gandum <- read.csv("../data/08_gandum_splitplot_rak.csv")
+df_gandum$Varietas_A  <- factor(df_gandum$Varietas_A)
+df_gandum$Perlakuan_B <- factor(df_gandum$Perlakuan_B)
+df_gandum$Kelompok    <- factor(df_gandum$Kelompok, levels = c("I", "II", "III", "IV"))
+
+# Langkah 2 (Cara 1): ANOVA Split-Plot RAK menggunakan aov() bawaan R dengan Error(Kelompok:Varietas_A)
+model_split_rak <- aov(
+  Hasil ~ Kelompok + Varietas_A * Perlakuan_B + Error(Kelompok:Varietas_A),
+  data = df_gandum
+)
+summary(model_split_rak)
+
+# Langkah 3 (Cara 2): Menggunakan agricolae::sp.plot() -> otomatis mencetak Ea, Eb, cv(a), & cv(b)!
+with(df_gandum, sp.plot(block = Kelompok, pplot = Varietas_A, splot = Perlakuan_B, Y = Hasil))
+
+# Langkah 4: Uji Lanjut LSMeans (emmeans) sesuai struktur galat Split-Plot
+# Karena interaksi A:B tidak nyata (p = 0.9675), fokus utama adalah LSMeans pengaruh utama A dan B:
+emm_varietas  <- emmeans(model_split_rak, ~ Varietas_A)
+cld(emm_varietas, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+emm_perlakuan <- emmeans(model_split_rak, ~ Perlakuan_B)
+pairs(emm_perlakuan, adjust = "tukey")
+cld(emm_perlakuan, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+# Catatan: Apabila pada kasus lain interaksi A x B nyata, gunakan irisan pengaruh sederhana berikut:
+emm_gandum_simple <- emmeans(model_split_rak, ~ Perlakuan_B | Varietas_A)
+pairs(emm_gandum_simple, adjust = "tukey")
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Output `sp.plot()`, `aov()`, dan `emmeans()`:**
+
+1. **Kesesuaian Sempurna `aov()` dan `sp.plot()`**:
+   * **Galat Petak Utama (`Ea`)**: `Df = 9`, `Mean Sq = 4.94` dengan **`cv(a) = 3.9%`**. Menguji `Varietas_A` menghasilkan **`F value = 267.74`** (`Pr(>F) = 4.086e-09 ***` $\rightarrow$ sangat nyata!).
+   * **Galat Anak Petak (`Eb`)**: `Df = 36`, `Mean Sq = 7.97` dengan **`cv(b) = 4.9%`**.
+   * **Interaksi `Varietas_A:Perlakuan_B`**: `F value = 0.3075`, **`Pr(>F) = 0.9675` (`> 0.05`, tidak nyata)**. Artinya keampuhan fungisida pelapis benih bersifat konsisten pada keempat varietas gandum!
+   * **Anak Petak `Perlakuan_B`**: **`F value = 6.9115`**, **`Pr(>F) = 0.000858 ***`** ($\rightarrow$ sangat nyata!).
+2. **Kehebatan `emmeans()` Memilih Galat yang Tepat**:
+   * Perhatikan pada `cld(emm_varietas)`: kolom derajat bebas otomatis memakai **`df = 9`** (Galat a), mengelompokkan varietas menjadi `A1_Vicland (44.7 a) < A2_Branch (57.7 b) = A3_Clintland (60.1 b) < A4_Sauk (66.3 c)`.
+   * Sebaliknya pada `pairs(emm_perlakuan)`: kontras perbandingan antar-perlakuan benih otomatis memakai **`df = 36`** (Galat b), membuktikan bahwa pelapisan benih `B3_Panogen` ($59,3$, huruf `c`) dan `B2_Ceresan` ($58,3$, huruf `bc`) meningkatkan hasil gandum secara sangat nyata dibandingkan `B1_Kontrol` tanpa fungisida ($55,5$, huruf `a`).
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Analisis ragam Rancangan Petak Terpisah dalam RAK menunjukkan tidak terdapat interaksi nyata antara varietas gandum dan perlakuan kimiawi benih ($F = 0,31$; $p = 0,9675$), namun pengaruh utama varietas ($F = 267,74$; $p = 4,09 \times 10^{-9}$; $\text{KK}_a = 3,9\%$) dan perlakuan kimiawi benih ($F = 6,91$; $p = 0,00086$; $\text{KK}_b = 4,9\%$) masing-masing berpengaruh sangat nyata terhadap hasil gandum. Varietas `A4_Sauk` memberikan hasil tertinggi sebesar $66,3\text{ bushels/acre}$, sedangkan perlakuan benih `B3_Panogen` ($59,3\text{ bushels/acre}$) dan `B2_Ceresan` ($58,3\text{ bushels/acre}$) meningkatkan hasil secara nyata dibandingkan kontrol tanpa perlakuan ($55,5\text{ bushels/acre}$)."*
+</div>
+
+---
+
+# Analisis 4.4: ANOVA Strip-Plot (*Split-Block*) dalam RAK & Perhitungan $\text{KK}_a, \text{KK}_b, \text{KK}_c$
+
+## Penjelasan Awal (Konsep Dasar)
+
+<div class="kotak-konsep">
+**Konsep Dasar — Tiga Lapisan Galat pada Rancangan Petak Berjalur (*Strip-Plot*):**
+
+Pada **Rancangan Petak Berjalur (*Strip-Plot / Split-Block*)**, Faktor $A$ diaplikasikan dalam jalur kolom menerus dan Faktor $B$ diaplikasikan dalam jalur baris menerus yang memotong tegak lurus di setiap kelompok. Konsekuensinya terdapat **tiga ukuran satuan percobaan dan tiga komponen galat**:
+1. **Galat (a)** (`Kelompok:A`) berderajat bebas $(a - 1)(r - 1)$ $\rightarrow$ menguji pengaruh utama **Faktor Mendatar $A$**.
+2. **Galat (b)** (`Kelompok:B`) berderajat bebas $(b - 1)(r - 1)$ $\rightarrow$ menguji pengaruh utama **Faktor Tegak $B$**.
+3. **Galat (c)** (`Kelompok:A:B` / Sisaan petak perpotongan kecil) berderajat bebas $(a - 1)(b - 1)(r - 1)$ $\rightarrow$ menguji **Interaksi $A \times B$ dengan ketelitian paling tinggi**!
+</div>
+
+## Konteks Kasus & Kapan Menggunakan Analisis Ini
+
+<div class="kotak-kasus">
+**Studi Kasus — 6 Varietas Padi $\times$ 3 Taraf Pupuk Nitrogen dalam Strip-Plot RAK:**
+
+* **Kapan Digunakan?** Gunakan **Strip-Plot RAK** apabila kedua faktor sama-sama lebih praktis diterapkan dalam jalur panjang menerus (misalnya penanaman jalur varietas mekanis berpotongan tegak lurus dengan jalur pemupukan nitrogen/irigasi) dan peneliti menaruh perhatian utama pada **pengujian interaksi $A \times B$**.
+* **Skenario Penelitian**: Percobaan lapangan pada **6 Varietas Padi (`V1` s.d. `V6`)** sebagai jalur mendatar/kolom dan **3 Dosis Pupuk Nitrogen (`N0` = 0, `N60` = 60, `N120` = 120 kg N/ha)** sebagai jalur tegak/baris pada **3 Kelompok sawah (`I, II, III`)**, mengamati **hasil gabah kering (ton/ha)** pada $6 \times 3 \times 3 = 54$ petak perpotongan. Dataset tersimpan pada `data/09_padi_stripplot_rak.csv`.
+</div>
+
+## Model Linier, Rumus Tiga Koefisien Keragaman ($\text{KK}_a, \text{KK}_b, \text{KK}_c$), & Hipotesis
+
+Model linier aditif untuk Rancangan Strip-Plot dalam RAK adalah:
+
+$$Y_{ijk} = \mu + \rho_k + \alpha_i + \delta_{ik} + \beta_j + \gamma_{jk} + (\alpha\beta)_{ij} + \varepsilon_{ijk}$$
+
+Keterangan tiga galat dan rumus Koefisien Keragaman per lapisan galat:
+
+$$\text{KK}_a = \frac{\sqrt{\text{KTG}_a}}{\bar{Y}_{\cdot\cdot\cdot}} \times 100\%, \qquad \text{KK}_b = \frac{\sqrt{\text{KTG}_b}}{\bar{Y}_{\cdot\cdot\cdot}} \times 100\%, \qquad \text{KK}_c = \frac{\sqrt{\text{KTG}_c}}{\bar{Y}_{\cdot\cdot\cdot}} \times 100\%$$
+
+Statistik uji $F$ pada masing-masing lapisan:
+
+$$F_{\text{hitung }(A)} = \frac{\text{KT}_A}{\text{KTG}_a}, \qquad F_{\text{hitung }(B)} = \frac{\text{KT}_B}{\text{KTG}_b}, \qquad F_{\text{hitung }(AB)} = \frac{\text{KT}_{AB}}{\text{KTG}_c}$$
+
+**Tiga Pasang Hipotesis:**
+
+1. **Interaksi $\text{Varietas} \times \text{Nitrogen}$** (diuji dengan $\text{KTG}_c$, $\text{db}_c = 20$): $H_0 : (\alpha\beta)_{ij} = 0$ vs $H_1 :$ minimal satu $(\alpha\beta)_{ij} \neq 0$.
+2. **Faktor Jalur Mendatar — Varietas ($A$)** (diuji dengan $\text{KTG}_a$, $\text{db}_a = 10$): $H_0 : \alpha_1 = \dots = \alpha_6 = 0$ vs $H_1 :$ minimal satu $\alpha_i \neq 0$.
+3. **Faktor Jalur Tegak — Nitrogen ($B$)** (diuji dengan $\text{KTG}_b$, $\text{db}_b = 4$): $H_0 : \beta_1 = \beta_2 = \beta_3 = 0$ vs $H_1 :$ minimal satu $\beta_j \neq 0$.
+
+## Kode R Siap Pakai (Step-by-Step)
+
+```{r stripplot-rak-padi, fig.cap="Profil hasil gabah kering (ton/ha) 6 varietas padi pada 3 jalur pemupukan Nitrogen dalam Rancangan Strip-Plot RAK."}
+# Langkah 1: Membaca data dan mengatur urutan faktor Varietas, Nitrogen, dan Kelompok
+df_strip <- read.csv("../data/09_padi_stripplot_rak.csv")
+df_strip$Varietas <- factor(df_strip$Varietas, levels = paste0("V", 1:6))
+df_strip$Nitrogen <- factor(df_strip$Nitrogen, levels = c("N0", "N60", "N120"))
+df_strip$Kelompok <- factor(df_strip$Kelompok, levels = c("I", "II", "III"))
+
+# Langkah 2 (Cara 1): Menggunakan agricolae::strip.plot() -> langsung mencetak Ea, Eb, Ec & cv(a,b,c)
+with(df_strip, strip.plot(BLOCK = Kelompok, COL = Varietas, ROW = Nitrogen, Y = Hasil_Gabah))
+
+# Langkah 3 (Cara 2): Menggunakan aov() bawaan R dengan suku Error(Kelompok:Varietas + Kelompok:Nitrogen)
+model_strip <- aov(
+  Hasil_Gabah ~ Kelompok + Varietas * Nitrogen +
+    Error(Kelompok:Varietas + Kelompok:Nitrogen),
+  data = df_strip
+)
+ringkasan_strip <- summary(model_strip)
+print(ringkasan_strip)
+
+# Langkah 4: Perhitungan eksplisit KKa, KKb, dan KKc dari nilai Kuadrat Tengah ketiga galat
+ktg_a <- ringkasan_strip[["Error: Kelompok:Varietas"]][[1]]["Residuals", "Mean Sq"]
+ktg_b <- ringkasan_strip[["Error: Kelompok:Nitrogen"]][[1]]["Residuals", "Mean Sq"]
+ktg_c <- ringkasan_strip[["Error: Within"]][[1]]["Residuals", "Mean Sq"]
+rata_umum <- mean(df_strip$Hasil_Gabah)
+
+KKa <- sqrt(ktg_a) / rata_umum * 100
+KKb <- sqrt(ktg_b) / rata_umum * 100
+KKc <- sqrt(ktg_c) / rata_umum * 100
+
+cat(sprintf("Rata-rata Umum = %.2f ton/ha\n", rata_umum))
+cat(sprintf("Galat (a) [Varietas] : KTG_a = %.4f | KKa = %.2f%%\n", ktg_a, KKa))
+cat(sprintf("Galat (b) [Nitrogen] : KTG_b = %.4f | KKb = %.2f%%\n", ktg_b, KKb))
+cat(sprintf("Galat (c) [Interaksi]: KTG_c = %.4f | KKc = %.2f%%\n", ktg_c, KKc))
+
+# Langkah 5: Visualisasi profil respons hasil gabah
+interaction.plot(
+  x.factor     = df_strip$Varietas,
+  trace.factor = df_strip$Nitrogen,
+  response     = df_strip$Hasil_Gabah,
+  type = "b", pch = c(19, 17, 15), col = c("#7f8c8d", "#2980b9", "#27ae60"), lwd = 2.2,
+  xlab = "Varietas Padi (Jalur Mendatar)",
+  ylab = "Rata-rata Hasil Gabah (ton/ha)",
+  trace.label = "Dosis Nitrogen",
+  main = "Profil Hasil Gabah 6 Varietas Padi x 3 Dosis Nitrogen (Strip-Plot RAK)"
+)
+```
+
+## Cara Membaca Output R & Kesimpulan Kasus
+
+<div class="kotak-interpretasi">
+**Panduan Membaca Tabel Tiga Galat `strip.plot()` dan `aov()`:**
+
+1. **Verifikasi Derajat Bebas Ketiga Lapisan Galat (`N = 54`, total $\text{db} = 53$)**:
+   * `Kelompok = 2`; `Varietas = 5` dengan **`Ea = 10`** ($5 \times 2$); `Nitrogen = 2` dengan **`Eb = 4`** ($2 \times 2$); serta `Nitrogen:Varietas = 10` dengan **`Ec = 20`** ($5 \times 2 \times 2$). Penjumlahan derajat bebas $= 2 + 5 + 10 + 2 + 4 + 10 + 20 = 53$ (tepat!).
+2. **Evaluasi Interaksi & Pengaruh Utama**:
+   * **Interaksi `Nitrogen:Varietas` (diuji terhadap `Ec = 0.0362`)**: `F value = 0.9974`, **`Pr(>F) = 0.4774` (`> 0.05`, tidak nyata)**. Grafik mengonfirmasi ketiga garis dosis nitrogen sejajar rapi dari `V1` menuju `V6`.
+   * **Faktor Mendatar `Varietas` (diuji terhadap `Ea = 0.0639`)**: **`F value = 106.15`**, **`Pr(>F) = 2.48e-08 ***`** (sangat nyata, `V6` tertinggi dan `V1` terendah).
+   * **Faktor Tegak `Nitrogen` (diuji terhadap `Eb = 0.0132`)**: **`F value = 1140.33`**, **`Pr(>F) = 3.07e-06 ***`** (sangat nyata, peningkatan nitrogen dari `N0` $\rightarrow$ `N60` $\rightarrow$ `N120` menaikkan hasil gabah secara konsisten pada seluruh varietas).
+3. **Tiga Nilai Koefisien Keragaman**: Diperoleh $\text{KK}_a = 3,93\%$ (`3.9%`), $\text{KK}_b = 1,79\%$ (`1.8%`), dan $\text{KK}_c = 2,96\%$ (`3.0%`) terhadap rata-rata umum $6,44\text{ ton/ha}$ — ketiganya di bawah $5\%$, menunjukkan percobaan lapangan dikelola dengan presisi sangat tinggi.
+
+**Kalimat Kesimpulan Siap Kutip:**
+> *"Berdasarkan analisis ragam Rancangan Petak Berjalur (Strip-Plot) dalam RAK, interaksi antara varietas padi dan pemupukan nitrogen tidak berpengaruh nyata terhadap hasil gabah kering ($F = 1,00$; $p = 0,4774$; $\text{KK}_c = 2,96\%$). Sebaliknya, pengaruh utama varietas padi ($F = 106,15$; $p = 2,48 \times 10^{-8}$; $\text{KK}_a = 3,93\%$) dan pengaruh utama dosis pupuk nitrogen ($F = 1140,33$; $p = 3,07 \times 10^{-6}$; $\text{KK}_b = 1,79\%$) masing-masing berpengaruh sangat nyata, di mana varietas `V6` dan pemupukan `N120` ($120\text{ kg N/ha}$) secara independen memberikan capaian hasil gabah tertinggi."*
+</div>
